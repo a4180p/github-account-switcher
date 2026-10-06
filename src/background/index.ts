@@ -1,4 +1,4 @@
-import browser, { DeclarativeNetRequest } from 'webextension-polyfill'
+import browser, { DeclarativeNetRequest, Runtime, WebRequest } from 'webextension-polyfill'
 import accountService from '../services/account'
 import { setBadgeText } from '../services/badge'
 import cookie from '../services/cookie'
@@ -11,7 +11,15 @@ import ruleService, {
 } from '../services/rule'
 import { RequestMessage, Response } from '../types'
 
-const RESOURCE_TYPES: DeclarativeNetRequest.ResourceType[] = [
+const REQUEST_RULE_RESOURCE_TYPES: DeclarativeNetRequest.ResourceType[] = [
+  'main_frame',
+  'sub_frame',
+  'csp_report',
+  'websocket',
+  'xmlhttprequest',
+]
+
+const WEB_REQUEST_RESOURCE_TYPES: WebRequest.ResourceType[] = [
   'main_frame',
   'sub_frame',
   'csp_report',
@@ -105,7 +113,7 @@ async function buildAddRules(): Promise<DeclarativeNetRequest.Rule[]> {
       },
       condition: {
         regexFilter: getRequestRulePattern(rule),
-        resourceTypes: RESOURCE_TYPES,
+        resourceTypes: REQUEST_RULE_RESOURCE_TYPES,
       },
     })
   }
@@ -193,9 +201,9 @@ function handleMessage(message: RequestMessage, senderStoreId?: string) {
 
 function listenMessage() {
   browser.runtime.onMessage.addListener(
-    async (request: RequestMessage, sender): Promise<Response<unknown>> => {
+    async (request: unknown, sender: Runtime.MessageSender): Promise<Response<unknown>> => {
       try {
-        const data = await handleMessage(request, sender.tab?.cookieStoreId)
+        const data = await handleMessage(request as RequestMessage, sender.tab?.cookieStoreId)
         return { success: true, data }
       } catch (error: unknown) {
         return { success: false, error: error as Error }
@@ -230,7 +238,7 @@ function interceptRequests() {
     },
     {
       urls: ['https://github.com/*'],
-      types: RESOURCE_TYPES,
+      types: WEB_REQUEST_RESOURCE_TYPES,
     },
     ['blocking', 'requestHeaders'],
   )

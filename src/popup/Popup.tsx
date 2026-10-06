@@ -17,7 +17,7 @@ function App() {
 
   return (
     <ThemeProvider theme={theme}>
-      <Box component="main" width={600}>
+      <Box component="main" sx={{ width: 600 }}>
         <CssBaseline />
         <Header />
         <Settings />

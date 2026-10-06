@@ -15,7 +15,13 @@ async function buildFirefox() {
   await deleteAsync(distFirefoxFolder)
   await cpy(`${distFolder}/**`, distFirefoxFolder)
 
-  const manifest = JSON.parse(await fs.readFile(join(distFirefoxFolder, 'manifest.json'), 'utf-8'))
+  const manifestJson = await fs.readFile(join(distFirefoxFolder, 'manifest.json'), 'utf-8')
+  let manifest: any
+  try {
+    manifest = JSON.parse(manifestJson)
+  } catch (error) {
+    throw new Error(`Invalid manifest.json in ${distFirefoxFolder}`, { cause: error })
+  }
   const {
     action,
     background: { service_worker },

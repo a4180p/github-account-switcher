@@ -71,10 +71,10 @@ export default function AutoSwitchRules() {
       </Alert>
 
       <Box
-        display="flex"
-        flexDirection="column"
-        gap={1}
         sx={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 1,
           '& > :last-child': {
             mb: 2,
           },

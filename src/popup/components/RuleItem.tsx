@@ -91,8 +91,12 @@ export default function RuleItem(props: Props) {
   }
 
   return (
-    <Box display="flex" gap={2} alignItems="flex-start" onDragOver={onDragOver} onDrop={onDrop}>
-      <Box flex="1">
+    <Box
+      sx={{ display: 'flex', gap: 2, alignItems: 'flex-start' }}
+      onDragOver={onDragOver}
+      onDrop={onDrop}
+    >
+      <Box sx={{ flex: 1 }}>
         <TextField
           size="medium"
           variant="standard"
@@ -106,7 +110,7 @@ export default function RuleItem(props: Props) {
           disabled={!isEditing}
         />
       </Box>
-      <Box width={150} flexShrink={0}>
+      <Box sx={{ width: 150, flexShrink: 0 }}>
         <TextField
           select
           size="medium"
@@ -128,7 +132,7 @@ export default function RuleItem(props: Props) {
           ))}
         </TextField>
       </Box>
-      <Box display="flex" flexShrink={0}>
+      <Box sx={{ display: 'flex', flexShrink: 0 }}>
         {draggable && !isEditing && (
           <Tooltip title="Reorder">
             <IconButton
