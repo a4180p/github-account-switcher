@@ -1,6 +1,6 @@
-import { Close, Done, Edit } from '@mui/icons-material'
+import { Close, Done, DragIndicator, Edit } from '@mui/icons-material'
 import { Box, IconButton, MenuItem, TextField, Tooltip } from '@mui/material'
-import { useState } from 'react'
+import { useState, type DragEventHandler } from 'react'
 import {
   IGNORE_ACCOUNT,
   Rule,
@@ -11,14 +11,30 @@ import {
 
 type Props = {
   accounts: string[]
+  draggable?: boolean
   initialValue?: Rule
   mode?: 'view' | 'edit'
   onDone: (rule: Rule) => void
   onDelete: (rule: Rule) => void
+  onDragEnd?: DragEventHandler<HTMLButtonElement>
+  onDragOver?: DragEventHandler<HTMLDivElement>
+  onDragStart?: DragEventHandler<HTMLButtonElement>
+  onDrop?: DragEventHandler<HTMLDivElement>
 }
 
 export default function RuleItem(props: Props) {
-  const { accounts, initialValue, mode, onDone, onDelete } = props
+  const {
+    accounts,
+    draggable,
+    initialValue,
+    mode,
+    onDone,
+    onDelete,
+    onDragEnd,
+    onDragOver,
+    onDragStart,
+    onDrop,
+  } = props
   const [rule, setRule] = useState<Rule>(
     initialValue ?? { id: Date.now(), urlPattern: '', account: '' },
   )
@@ -75,7 +91,7 @@ export default function RuleItem(props: Props) {
   }
 
   return (
-    <Box display="flex" gap={2} alignItems="flex-start">
+    <Box display="flex" gap={2} alignItems="flex-start" onDragOver={onDragOver} onDrop={onDrop}>
       <Box flex="1">
         <TextField
           size="medium"
@@ -113,6 +129,19 @@ export default function RuleItem(props: Props) {
         </TextField>
       </Box>
       <Box display="flex" flexShrink={0}>
+        {draggable && !isEditing && (
+          <Tooltip title="Reorder">
+            <IconButton
+              size="small"
+              sx={{ cursor: 'grab' }}
+              draggable
+              onDragEnd={onDragEnd}
+              onDragStart={onDragStart}
+            >
+              <DragIndicator />
+            </IconButton>
+          </Tooltip>
+        )}
         {!isEditing && (
           <Tooltip title="Edit">
             <IconButton size="small" color="primary" onClick={handleEdit}>

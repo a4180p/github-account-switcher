@@ -1,13 +1,15 @@
 import { AddCircle } from '@mui/icons-material'
 import { Alert, Box, Button, Link } from '@mui/material'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type DragEvent } from 'react'
 import accountService from '../../services/account'
+import { reorderRules } from '../../services/ruleOrder'
 import ruleService, { Rule } from '../../services/rule'
 import RuleItem from './RuleItem'
 
 export default function AutoSwitchRules() {
   const [rules, setRules] = useState<Rule[]>([])
   const [accounts, setAccounts] = useState<string[]>([])
+  const [draggedRuleId, setDraggedRuleId] = useState<number>()
   const [isAdding, setIsAdding] = useState(false)
 
   useEffect(() => {
@@ -39,6 +41,21 @@ export default function AutoSwitchRules() {
     setRules(await ruleService.getAll())
   }
 
+  async function moveRule(targetRule: Rule) {
+    if (!draggedRuleId) {
+      return
+    }
+
+    const nextRules = reorderRules(rules, draggedRuleId, targetRule.id)
+    if (nextRules === rules) {
+      return
+    }
+
+    setRules(nextRules)
+    setDraggedRuleId(undefined)
+    await ruleService.replaceAll(nextRules)
+  }
+
   return (
     <Box>
       <Alert severity="info" sx={{ mb: 2 }}>
@@ -67,9 +84,16 @@ export default function AutoSwitchRules() {
           <RuleItem
             key={rule.id}
             accounts={accounts}
+            draggable={!isAdding}
             initialValue={rule}
             onDone={updateRule}
             onDelete={removeRule}
+            onDragEnd={() => setDraggedRuleId(undefined)}
+            onDragOver={(event: DragEvent<HTMLDivElement>) => event.preventDefault()}
+            onDragStart={() => setDraggedRuleId(rule.id)}
+            onDrop={() => {
+              void moveRule(rule)
+            }}
           />
         ))}
         {isAdding && (

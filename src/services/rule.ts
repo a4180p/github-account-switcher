@@ -44,9 +44,15 @@ async function remove(id: number) {
   })
 }
 
+async function replaceAll(rules: Rule[]) {
+  rules.forEach(assertValidRule)
+  await storage.set('rules', rules)
+}
+
 export default {
   getAll,
   add,
   update,
   remove,
+  replaceAll,
 }
