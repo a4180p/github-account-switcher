@@ -19,6 +19,7 @@ import browser, { Tabs } from 'webextension-polyfill'
 import accountService, { Account } from '../../services/account'
 import { completeManualSwitch, startAddAccountLogin } from '../../services/accountSwitching'
 import cookie from '../../services/cookie'
+import { listAccounts } from '../../services/githubSession'
 import rule from '../../services/rule'
 import { isGitHubUrl, removeAccount } from '../../shared'
 
@@ -99,7 +100,7 @@ export default function Accounts() {
 
   useEffect(() => {
     getCurrentTab().then((tab) => {
-      accountService.getAll({ storeId: tab?.cookieStoreId }).then(setAccounts)
+      listAccounts({ storeId: tab?.cookieStoreId }).then(setAccounts)
     })
   }, [])
 

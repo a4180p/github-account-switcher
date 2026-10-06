@@ -3,6 +3,7 @@ import accountService from '../services/account'
 import { setBadgeText } from '../services/badge'
 import cookie from '../services/cookie'
 import { resolveStoreId } from '../services/cookieStoreContext'
+import { captureCurrentAccount, listAccountNames, listAccounts } from '../services/githubSession'
 import ruleService, {
   ACCOUNT_PARAM,
   findRuleForRequest,
@@ -43,20 +44,12 @@ async function syncAvatar(accountName: string) {
 }
 
 async function syncAccounts(storeId?: string) {
-  const usernameCookie = await cookie.get('dotcom_user', { storeId })
-  const sessionCookie = await cookie.get('user_session', { storeId })
-
-  if (!usernameCookie || !sessionCookie) {
-    return
-  }
-
-  const { value: account } = usernameCookie
+  const account = await captureCurrentAccount({ storeId })
   if (!account) {
     return
   }
 
-  await accountService.upsert(account, await cookie.getAll({ storeId }))
-  const accounts = await accountService.getAll({ storeId })
+  const accounts = await listAccounts({ storeId })
   console.info('synced accounts', accounts)
 
   await updateDynamicRequestRules()
@@ -185,7 +178,7 @@ function handleMessage(message: RequestMessage, senderStoreId?: string) {
   const storeId = resolveStoreId(message.cookieStoreId, senderStoreId)
   switch (type) {
     case 'getAccounts':
-      return accountService.getAllNames()
+      return listAccountNames()
     case 'switchAccount':
       return accountService.switchTo(message.account, { storeId })
     case 'removeAccount':
