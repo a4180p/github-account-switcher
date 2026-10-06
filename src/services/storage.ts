@@ -1,6 +1,15 @@
 import browser from 'webextension-polyfill'
+
+export { resolveUpdate } from './storageSemantics'
+
+import { resolveUpdate } from './storageSemantics'
+
 async function set<T>(key: string, value: T) {
   await browser.storage.local.set({ [key]: value })
+}
+
+async function remove(key: string) {
+  await browser.storage.local.remove(key)
 }
 
 async function get<T>(key: string): Promise<T | undefined> {
@@ -10,7 +19,14 @@ async function get<T>(key: string): Promise<T | undefined> {
 
 async function update<T>(key: string, updater: (value?: T) => T | undefined) {
   const value = await get<T>(key)
-  await set(key, updater(value))
+  const nextValue = resolveUpdate(value, updater)
+
+  if (nextValue.type === 'remove') {
+    await remove(key)
+    return
+  }
+
+  await set(key, nextValue.value)
 }
 
 async function clear() {

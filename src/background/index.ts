@@ -18,6 +18,21 @@ const RESOURCE_TYPES: DeclarativeNetRequest.ResourceType[] = [
   'xmlhttprequest',
 ]
 
+async function syncAvatar(accountName: string) {
+  try {
+    const res = await fetch(`https://github.com/${accountName}.png?size=100`)
+    if (res.status !== 200) {
+      return false
+    }
+
+    await accountService.saveAvatar(accountName, res.url)
+    return true
+  } catch (error) {
+    console.error('Failed to sync avatar', error)
+    return false
+  }
+}
+
 async function syncAccounts() {
   const usernameCookie = await cookie.get('dotcom_user')
   const sessionCookie = await cookie.get('user_session')
@@ -37,9 +52,9 @@ async function syncAccounts() {
 
   await updateDynamicRequestRules()
 
-  const res = await fetch(`https://github.com/${account}.png?size=100`)
-  if (res.status === 200) {
-    accountService.saveAvatar(account, res.url)
+  const avatarSynced = await syncAvatar(account)
+  if (!avatarSynced) {
+    console.info('Avatar sync skipped', account)
   }
 
   await setBadgeText(account.slice(0, 2))
