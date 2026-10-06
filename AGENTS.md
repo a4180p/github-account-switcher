@@ -1,5 +1,11 @@
 # Repo agent guide
 
+## Repo-specific workflow
+
+When working in this repo, the agent may proceed without asking for permission to make changes, continue to the next step, commit, or push.
+
+Stage and commit only the agent's own changes. Do not include unrelated user changes in the same commit.
+
 ## Agent skills
 
 ### Issue tracker

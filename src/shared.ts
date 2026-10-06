@@ -1,14 +1,5 @@
 import browser from 'webextension-polyfill'
-import { Rule } from './services/rule'
-
-function urlMatchesRule(url: string, rule: Rule) {
-  const pattern = new RegExp(rule.urlPattern)
-  return pattern.test(url)
-}
-
-function urlMatchesAnyRule(url: string, rules: Rule[]) {
-  return rules.some((rule) => urlMatchesRule(url, rule))
-}
+import { Rule, getRuleAction } from './services/rule'
 
 export function isGitHubUrl(url: string | undefined) {
   if (!url) {
@@ -27,11 +18,7 @@ export function isNormalGitHubUrl(url: string | undefined, rules: Rule[]) {
     return false
   }
 
-  if (urlMatchesAnyRule(url, rules)) {
-    return false
-  }
-
-  return true
+  return getRuleAction(url, rules) !== 'switch'
 }
 
 export async function removeAccount(account: string) {

@@ -1,10 +1,16 @@
 import storage from './storage'
 
-export type Rule = {
-  id: number
-  urlPattern: string
-  account: string
-}
+export {
+  IGNORE_ACCOUNT,
+  findMatchingRule,
+  getRuleAction,
+  isIgnoreRule,
+  type Rule,
+  validateAccount,
+  validateUrlPattern,
+} from './ruleSemantics'
+
+import type { Rule } from './ruleSemantics'
 
 async function getAll(): Promise<Rule[]> {
   const rules = await storage.get<Rule[]>('rules')

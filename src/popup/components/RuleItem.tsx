@@ -1,60 +1,7 @@
 import { Close, Done, Edit } from '@mui/icons-material'
 import { Box, IconButton, TextField, Tooltip } from '@mui/material'
 import { useState } from 'react'
-import { Rule } from '../../services/rule'
-
-function isValidRegex(regex: string) {
-  try {
-    new RegExp(regex)
-    return true
-  } catch (error) {
-    return false
-  }
-}
-
-function isValidAccount(account: string) {
-  return /^(?![-_])(?!.*[-_]{2})[A-Za-z0-9_-]+(?<![-_])$/g.test(account)
-}
-
-function validateUrlPattern(urlPattern: string): { valid: boolean; message?: string } {
-  if (urlPattern.trim() === '') {
-    return {
-      valid: false,
-      message: 'URL pattern is required',
-    }
-  }
-
-  if (!isValidRegex(urlPattern)) {
-    return {
-      valid: false,
-      message: 'Invalid regular expression',
-    }
-  }
-
-  return {
-    valid: true,
-  }
-}
-
-function validateAccount(account: string): { valid: boolean; message?: string } {
-  if (account.trim() === '') {
-    return {
-      valid: false,
-      message: 'Account is required',
-    }
-  }
-
-  if (!isValidAccount(account)) {
-    return {
-      valid: false,
-      message: 'Invalid account',
-    }
-  }
-
-  return {
-    valid: true,
-  }
-}
+import { Rule, validateAccount, validateUrlPattern } from '../../services/rule'
 
 type Props = {
   initialValue?: Rule
