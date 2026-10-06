@@ -1,5 +1,6 @@
 import browser from 'webextension-polyfill'
-import { getAddAccountLoginPath, getManualSwitchPath } from '../services/accountSwitchingSemantics'
+import { completeManualSwitch } from '../services/accountSwitching'
+import { getAddAccountLoginPath } from '../services/accountSwitchingSemantics'
 import { removeAccount } from '../shared'
 import {
   ClearCookiesMessage,
@@ -87,15 +88,16 @@ async function addAccount() {
 }
 
 async function switchAccount(account: string) {
-  await browser.runtime.sendMessage({ type: 'switchAccount', account })
-  const autoSwitchRules = await getAutoSwitchRules()
-
-  const nextPath = getManualSwitchPath(window.location.href, autoSwitchRules)
-  if (!nextPath) {
-    window.location.reload()
-  } else {
-    navigateOnGitHub(nextPath)
-  }
+  await completeManualSwitch({
+    accountName: account,
+    currentUrl: window.location.href,
+    loadRules: getAutoSwitchRules,
+    switchAccount: async (accountName) => {
+      await browser.runtime.sendMessage({ type: 'switchAccount', account: accountName })
+    },
+    reload: () => window.location.reload(),
+    navigate: () => navigateOnGitHub('/'),
+  })
 }
 
 function injectScript() {

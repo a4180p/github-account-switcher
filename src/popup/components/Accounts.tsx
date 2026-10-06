@@ -17,10 +17,8 @@ import {
 import { useEffect, useState } from 'react'
 import browser, { Tabs } from 'webextension-polyfill'
 import accountService, { Account } from '../../services/account'
-import {
-  getAddAccountLoginDestination,
-  getManualSwitchDestination,
-} from '../../services/accountSwitchingSemantics'
+import { completeManualSwitch } from '../../services/accountSwitching'
+import { getAddAccountLoginDestination } from '../../services/accountSwitchingSemantics'
 import cookie from '../../services/cookie'
 import rule from '../../services/rule'
 import { isGitHubUrl, removeAccount } from '../../shared'
@@ -92,10 +90,11 @@ export default function Accounts() {
 
     const tab = await getCurrentTab()
     const rules = await rule.getAll()
+    const currentUrl = tab?.url
 
-    if (isGitHubUrl(tab?.url)) {
-      await browser.tabs.update(tab?.id!, {
-        url: getAddAccountLoginDestination(tab.url, rules),
+    if (currentUrl && isGitHubUrl(currentUrl) && tab?.id) {
+      await browser.tabs.update(tab.id, {
+        url: getAddAccountLoginDestination(currentUrl, rules),
       })
     } else {
       await browser.tabs.create({ url: 'https://github.com/login' })
@@ -105,19 +104,22 @@ export default function Accounts() {
   }
 
   async function handleSwitch(username: string) {
-    await accountService.switchTo(username)
-
     const tab = await getCurrentTab()
-    const rules = await rule.getAll()
+    const currentUrl = tab?.url
 
-    if (isGitHubUrl(tab?.url)) {
-      const destination = getManualSwitchDestination(tab.url, rules)
-      if (destination.kind === 'reload') {
-        await browser.tabs.reload(tab?.id!)
-      } else {
-        await browser.tabs.update(tab?.id!, { url: destination.url })
-      }
+    if (currentUrl && isGitHubUrl(currentUrl) && tab?.id) {
+      await completeManualSwitch({
+        accountName: username,
+        currentUrl,
+        loadRules: () => rule.getAll(),
+        switchAccount: (accountName) => accountService.switchTo(accountName),
+        reload: () => browser.tabs.reload(tab.id),
+        navigate: async (url) => {
+          await browser.tabs.update(tab.id, { url })
+        },
+      })
     } else {
+      await accountService.switchTo(username)
       await browser.tabs.create({ url: 'https://github.com' })
     }
 
