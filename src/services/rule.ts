@@ -1,8 +1,11 @@
 import storage from './storage'
 
 export {
+  ACCOUNT_PARAM,
   IGNORE_ACCOUNT,
   findMatchingRule,
+  findRuleForRequest,
+  getRequestRulePattern,
   getRuleAction,
   isIgnoreRule,
   type Rule,

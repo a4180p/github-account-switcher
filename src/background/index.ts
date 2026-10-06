@@ -2,7 +2,12 @@ import browser, { DeclarativeNetRequest } from 'webextension-polyfill'
 import accountService from '../services/account'
 import { setBadgeText } from '../services/badge'
 import cookie from '../services/cookie'
-import ruleService from '../services/rule'
+import ruleService, {
+  ACCOUNT_PARAM,
+  findRuleForRequest,
+  getRequestRulePattern,
+  IGNORE_ACCOUNT,
+} from '../services/rule'
 import { RequestMessage, Response } from '../types'
 
 const RESOURCE_TYPES: DeclarativeNetRequest.ResourceType[] = [
@@ -55,7 +60,7 @@ async function buildCookieValue(accountName: string): Promise<string | null> {
 
   return cookies
     .map((cookie) => `${cookie.name}=${cookie.value}`)
-    .concat(`__account__=${accountName}`)
+    .concat(`${ACCOUNT_PARAM}=${accountName}`)
     .join('; ')
 }
 
@@ -83,7 +88,7 @@ async function buildAddRules(): Promise<DeclarativeNetRequest.Rule[]> {
         ],
       },
       condition: {
-        regexFilter: `${rule.urlPattern}|__account__=${rule.account}`,
+        regexFilter: getRequestRulePattern(rule),
         resourceTypes: RESOURCE_TYPES,
       },
     })
@@ -114,12 +119,13 @@ function watchAutoSwitchRequests() {
   browser.webRequest.onBeforeRequest.addListener(
     (details) => {
       ruleService.getAll().then((autoSwitchRules) => {
-        for (const rule of autoSwitchRules) {
-          if (new RegExp(rule.urlPattern).test(details.url)) {
-            console.info('onBeforeRequest: found an auto switch rule for url', details.url, rule)
-            return accountService.switchTo(rule.account)
-          }
+        const rule = findRuleForRequest(details.url, autoSwitchRules)
+        if (!rule || rule.account === IGNORE_ACCOUNT) {
+          return
         }
+
+        console.log('onBeforeRequest: found an auto switch rule for url', details.url, rule)
+        accountService.switchTo(rule.account)
       })
     },
     {
@@ -187,22 +193,20 @@ function interceptRequests() {
       }
 
       const autoSwitchRules = await ruleService.getAll()
-      for (const rule of autoSwitchRules) {
-        const urlPattern = `${rule.urlPattern}|__account__=${rule.account}`
-        if (new RegExp(urlPattern).test(details.url)) {
-          const cookieValue = await buildCookieValue(rule.account)
-          if (cookieValue) {
-            for (const header of details.requestHeaders) {
-              if (header.name.toLowerCase() === 'cookie') {
-                header.value = cookieValue
-              }
-            }
-          }
-          console.info('interceptRequests: found an auto switch rule for url', details.url, rule)
-          return { requestHeaders: details.requestHeaders }
-        }
+      const rule = findRuleForRequest(details.url, autoSwitchRules)
+      if (!rule || rule.account === IGNORE_ACCOUNT) {
+        return { requestHeaders: details.requestHeaders }
       }
 
+      const cookieValue = await buildCookieValue(rule.account)
+      if (cookieValue) {
+        for (const header of details.requestHeaders) {
+          if (header.name.toLowerCase() === 'cookie') {
+            header.value = cookieValue
+          }
+        }
+      }
+      console.log('interceptRequests: found an auto switch rule for url', details.url, rule)
       return { requestHeaders: details.requestHeaders }
     },
     {

@@ -1,7 +1,9 @@
 import assert from 'node:assert/strict'
 import {
+  ACCOUNT_PARAM,
   IGNORE_ACCOUNT,
   Rule,
+  findRuleForRequest,
   getRuleAction,
   validateAccount,
   validateUrlPattern,
@@ -33,5 +35,10 @@ assert.equal(
 )
 assert.equal(getRuleAction('https://github.com/docs/readme', [ignoreRule]), 'ignore')
 assert.equal(getRuleAction('https://github.com/home', [invalidRule]), 'none')
+assert.equal(
+  findRuleForRequest(`https://github.com/home?${ACCOUNT_PARAM}=work_account`, [switchRule])
+    ?.account,
+  'work_account',
+)
 
 console.log('auto-switch rule semantics OK')

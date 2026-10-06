@@ -5,6 +5,7 @@ export type Rule = {
 }
 
 export const IGNORE_ACCOUNT = 'ignore'
+export const ACCOUNT_PARAM = '__account__'
 
 type ValidationResult = {
   valid: boolean
@@ -85,6 +86,27 @@ export function findMatchingRule(url: string, rules: Rule[]): Rule | undefined {
       return rule
     }
   }
+}
+
+function getTaggedAccount(url: string) {
+  try {
+    return new URL(url).searchParams.get(ACCOUNT_PARAM) ?? undefined
+  } catch {
+    return
+  }
+}
+
+export function getRequestRulePattern(rule: Rule) {
+  return `${rule.urlPattern}|${ACCOUNT_PARAM}=${rule.account}`
+}
+
+export function findRuleForRequest(url: string, rules: Rule[]): Rule | undefined {
+  const taggedAccount = getTaggedAccount(url)
+  if (taggedAccount) {
+    return rules.find((rule) => rule.account === taggedAccount) ?? findMatchingRule(url, rules)
+  }
+
+  return findMatchingRule(url, rules)
 }
 
 export function isIgnoreRule(rule: Rule | undefined): rule is Rule {
