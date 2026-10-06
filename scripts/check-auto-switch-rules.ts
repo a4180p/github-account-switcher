@@ -3,9 +3,11 @@ import {
   ACCOUNT_PARAM,
   IGNORE_ACCOUNT,
   Rule,
+  assertValidRule,
   findRuleForRequest,
   getRuleAction,
   validateAccount,
+  validateRule,
   validateUrlPattern,
 } from '../src/services/ruleSemantics'
 
@@ -29,6 +31,9 @@ const invalidRule: Rule = {
 
 assert.equal(validateUrlPattern('[').valid, false)
 assert.equal(validateAccount(IGNORE_ACCOUNT).valid, true)
+assert.equal(validateRule(switchRule).valid, true)
+assert.equal(validateRule(invalidRule).urlPatternMessage, 'Invalid regular expression')
+assert.throws(() => assertValidRule(invalidRule), /Invalid regular expression/)
 assert.equal(
   getRuleAction('https://github.com/corp-team/project', [invalidRule, switchRule]),
   'switch',

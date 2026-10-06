@@ -3,6 +3,7 @@ import storage from './storage'
 export {
   ACCOUNT_PARAM,
   IGNORE_ACCOUNT,
+  assertValidRule,
   findMatchingRule,
   findRuleForRequest,
   getRequestRulePattern,
@@ -12,10 +13,11 @@ export {
   isNormalGitHubUrl,
   type Rule,
   validateAccount,
+  validateRule,
   validateUrlPattern,
 } from './ruleSemantics'
 
-import type { Rule } from './ruleSemantics'
+import { assertValidRule, type Rule } from './ruleSemantics'
 
 async function getAll(): Promise<Rule[]> {
   const rules = await storage.get<Rule[]>('rules')
@@ -23,12 +25,14 @@ async function getAll(): Promise<Rule[]> {
 }
 
 async function add(rule: Rule) {
+  assertValidRule(rule)
   await storage.update<Rule[]>('rules', (rules = []) => {
     return [...rules, rule]
   })
 }
 
 async function update(rule: Rule) {
+  assertValidRule(rule)
   await storage.update<Rule[]>('rules', (rules = []) => {
     return rules.map((r) => (r.id === rule.id ? rule : r))
   })

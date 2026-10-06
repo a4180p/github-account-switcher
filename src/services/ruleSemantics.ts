@@ -12,6 +12,12 @@ type ValidationResult = {
   message?: string
 }
 
+type RuleValidationResult = {
+  valid: boolean
+  urlPatternMessage?: string
+  accountMessage?: string
+}
+
 function isValidRegex(regex: string) {
   try {
     new RegExp(regex)
@@ -69,6 +75,26 @@ export function validateAccount(account: string): ValidationResult {
   return {
     valid: true,
   }
+}
+
+export function validateRule(rule: Rule): RuleValidationResult {
+  const urlPatternValidation = validateUrlPattern(rule.urlPattern)
+  const accountValidation = validateAccount(rule.account)
+
+  return {
+    valid: urlPatternValidation.valid && accountValidation.valid,
+    urlPatternMessage: urlPatternValidation.message,
+    accountMessage: accountValidation.message,
+  }
+}
+
+export function assertValidRule(rule: Rule) {
+  const validation = validateRule(rule)
+  if (validation.valid) {
+    return
+  }
+
+  throw new Error(validation.urlPatternMessage ?? validation.accountMessage ?? 'Invalid rule')
 }
 
 export function isGitHubUrl(url: string | undefined) {

@@ -1,7 +1,7 @@
 import { Close, Done, Edit } from '@mui/icons-material'
 import { Box, IconButton, TextField, Tooltip } from '@mui/material'
 import { useState } from 'react'
-import { Rule, validateAccount, validateUrlPattern } from '../../services/rule'
+import { Rule, validateAccount, validateRule, validateUrlPattern } from '../../services/rule'
 
 type Props = {
   initialValue?: Rule
@@ -24,13 +24,12 @@ export default function RuleItem(props: Props) {
   }
 
   function validate() {
-    const urlPatternValidation = validateUrlPattern(rule.urlPattern)
-    const accountValidation = validateAccount(rule.account)
+    const validation = validateRule(rule)
 
-    setUrlPatternValidation(urlPatternValidation.message)
-    setAccountValidation(accountValidation.message)
+    setUrlPatternValidation(validation.urlPatternMessage)
+    setAccountValidation(validation.accountMessage)
 
-    return urlPatternValidation.valid && accountValidation.valid
+    return validation.valid
   }
 
   function handleDone() {
