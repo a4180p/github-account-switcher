@@ -77,6 +77,22 @@ async function getCurrentTab(): Promise<Tabs.Tab | undefined> {
   return tab
 }
 
+function getGitHubTabAdapter(tab: Tabs.Tab | undefined) {
+  const currentUrl = tab?.url
+  if (!currentUrl || !isGitHubUrl(currentUrl) || !tab?.id) {
+    return
+  }
+
+  return {
+    currentUrl,
+    loadRules: () => rule.getAll(),
+    navigate: async (url: string) => {
+      await browser.tabs.update(tab.id!, { url })
+    },
+    reload: () => browser.tabs.reload(tab.id!),
+  }
+}
+
 export default function Accounts() {
   const [accounts, setAccounts] = useState<Account[]>([])
 
@@ -85,17 +101,14 @@ export default function Accounts() {
   }, [])
 
   async function handleLogin() {
-    const tab = await getCurrentTab()
-    const currentUrl = tab?.url
+    const adapter = getGitHubTabAdapter(await getCurrentTab())
 
-    if (currentUrl && isGitHubUrl(currentUrl) && tab?.id) {
+    if (adapter) {
       await startAddAccountLogin({
-        currentUrl,
-        loadRules: () => rule.getAll(),
+        currentUrl: adapter.currentUrl,
+        loadRules: adapter.loadRules,
         clearCookies: () => cookie.clear(),
-        navigate: async (url) => {
-          await browser.tabs.update(tab.id, { url })
-        },
+        navigate: adapter.navigate,
       })
     } else {
       await cookie.clear()
@@ -106,19 +119,16 @@ export default function Accounts() {
   }
 
   async function handleSwitch(username: string) {
-    const tab = await getCurrentTab()
-    const currentUrl = tab?.url
+    const adapter = getGitHubTabAdapter(await getCurrentTab())
 
-    if (currentUrl && isGitHubUrl(currentUrl) && tab?.id) {
+    if (adapter) {
       await completeManualSwitch({
         accountName: username,
-        currentUrl,
-        loadRules: () => rule.getAll(),
+        currentUrl: adapter.currentUrl,
+        loadRules: adapter.loadRules,
         switchAccount: (accountName) => accountService.switchTo(accountName),
-        reload: () => browser.tabs.reload(tab.id),
-        navigate: async (url) => {
-          await browser.tabs.update(tab.id, { url })
-        },
+        reload: adapter.reload,
+        navigate: adapter.navigate,
       })
     } else {
       await accountService.switchTo(username)

@@ -79,36 +79,47 @@ function navigateOnGitHub(path: string) {
   window.location.search = url.search
 }
 
-function navigateToGitHubUrl(url: string) {
-  const nextUrl = new URL(url, window.location.origin)
-  if (nextUrl.origin !== window.location.origin) {
-    throw new Error('Unexpected redirect origin')
-  }
-
-  navigateOnGitHub(`${nextUrl.pathname}${nextUrl.search}`)
-}
-
-async function addAccount() {
-  await startAddAccountLogin({
+function createGitHubPageAdapter() {
+  return {
     currentUrl: window.location.href,
     loadRules: getAutoSwitchRules,
     clearCookies: async () => {
       await browser.runtime.sendMessage({ type: 'clearCookies' } as ClearCookiesMessage)
     },
-    navigate: (url) => navigateToGitHubUrl(url),
+    switchAccount: async (accountName: string) => {
+      await browser.runtime.sendMessage({ type: 'switchAccount', account: accountName })
+    },
+    reload: () => window.location.reload(),
+    navigate: (url: string) => {
+      const nextUrl = new URL(url, window.location.origin)
+      if (nextUrl.origin !== window.location.origin) {
+        throw new Error('Unexpected redirect origin')
+      }
+
+      navigateOnGitHub(`${nextUrl.pathname}${nextUrl.search}`)
+    },
+  }
+}
+
+async function addAccount() {
+  const adapter = createGitHubPageAdapter()
+  await startAddAccountLogin({
+    currentUrl: adapter.currentUrl,
+    loadRules: adapter.loadRules,
+    clearCookies: adapter.clearCookies,
+    navigate: adapter.navigate,
   })
 }
 
 async function switchAccount(account: string) {
+  const adapter = createGitHubPageAdapter()
   await completeManualSwitch({
     accountName: account,
-    currentUrl: window.location.href,
-    loadRules: getAutoSwitchRules,
-    switchAccount: async (accountName) => {
-      await browser.runtime.sendMessage({ type: 'switchAccount', account: accountName })
-    },
-    reload: () => window.location.reload(),
-    navigate: () => navigateOnGitHub('/'),
+    currentUrl: adapter.currentUrl,
+    loadRules: adapter.loadRules,
+    switchAccount: adapter.switchAccount,
+    reload: adapter.reload,
+    navigate: adapter.navigate,
   })
 }
 
