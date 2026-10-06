@@ -34,6 +34,12 @@ function isValidGitHubAccount(account: string) {
   return /^(?![-_])(?!.*[-_]{2})[A-Za-z0-9_-]+(?<![-_])$/g.test(account)
 }
 
+function getUnsupportedRegexReason(regex: string) {
+  if (/\(\?(?:!|=|<=|<!)/.test(regex)) {
+    return 'Lookarounds are not supported in Auto Switching Rules'
+  }
+}
+
 function getUnsafeRegexReason(regex: string) {
   if (regex.length > MAX_URL_PATTERN_LENGTH) {
     return 'Regular expression is too long'
@@ -56,6 +62,14 @@ export function validateUrlPattern(urlPattern: string): ValidationResult {
     return {
       valid: false,
       message: 'Invalid regular expression',
+    }
+  }
+
+  const unsupportedRegexReason = getUnsupportedRegexReason(urlPattern)
+  if (unsupportedRegexReason) {
+    return {
+      valid: false,
+      message: unsupportedRegexReason,
     }
   }
 
