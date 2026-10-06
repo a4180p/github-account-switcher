@@ -1,6 +1,7 @@
 import browser, { Cookies } from 'webextension-polyfill'
 import { setBadgeText } from './badge'
 import cookie from './cookie'
+import { CookieStoreContext, withStoreId } from './cookieStoreContext'
 import storage from './storage'
 
 type Cookie = Cookies.Cookie
@@ -14,16 +15,21 @@ export type Account = {
 
 type Accounts = Record<string, Cookie[]>
 
-async function getAll(): Promise<Account[]> {
-  const accounts = await storage.get<Accounts>('accounts')
-  if (!accounts) {
-    return []
-  }
+async function getStoredAccounts() {
+  return (await storage.get<Accounts>('accounts')) ?? {}
+}
 
-  const currentAccount = await browser.cookies.get({
-    url: 'https://github.com',
-    name: 'dotcom_user',
-  })
+async function getAll(context: CookieStoreContext = {}): Promise<Account[]> {
+  const accounts = await getStoredAccounts()
+  const currentAccount = await browser.cookies.get(
+    withStoreId(
+      {
+        url: 'https://github.com',
+        name: 'dotcom_user',
+      },
+      context.storeId,
+    ),
+  )
 
   const avatarUrls = await storage.get<Record<string, string>>('avatars')
 
@@ -42,13 +48,27 @@ async function getAll(): Promise<Account[]> {
 }
 
 async function getAllNames(): Promise<string[]> {
-  const accounts = await getAll()
-  return accounts.map(({ name }) => name)
+  return Object.keys(await getStoredAccounts())
 }
 
 async function find(accountName: string): Promise<Account | undefined> {
-  const accounts = await getAll()
-  return accounts.find((account) => account.name === accountName)
+  const accounts = await getStoredAccounts()
+  const cookies = accounts[accountName]
+  if (!cookies) {
+    return
+  }
+
+  const userSessionCookie = cookies.find(({ name }) => name === 'user_session')
+  const avatarUrls = await storage.get<Record<string, string>>('avatars')
+  return {
+    name: accountName,
+    cookies,
+    active: false,
+    avatarUrl: avatarUrls?.[accountName],
+    expiresAt: userSessionCookie?.expirationDate
+      ? new Date(userSessionCookie.expirationDate * 1000)
+      : undefined,
+  }
 }
 
 async function upsert(accountName: string, cookies: Cookie[]) {
@@ -58,16 +78,17 @@ async function upsert(accountName: string, cookies: Cookie[]) {
   })
 }
 
-async function switchTo(accountName: string) {
-  await cookie.clear()
+async function switchTo(accountName: string, context: CookieStoreContext = {}) {
+  await cookie.clear(context)
 
   const account = await find(accountName)
   const cookies = account?.cookies || []
   for (const cookie of cookies) {
-    const { hostOnly, domain, session, ...rest } = cookie
+    const { hostOnly, domain, session, storeId, ...rest } = cookie
     await browser.cookies.set({
       url: 'https://github.com',
       domain: hostOnly ? undefined : domain,
+      storeId: context.storeId,
       ...rest,
     })
   }

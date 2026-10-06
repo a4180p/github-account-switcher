@@ -2,6 +2,7 @@ import browser, { DeclarativeNetRequest } from 'webextension-polyfill'
 import accountService from '../services/account'
 import { setBadgeText } from '../services/badge'
 import cookie from '../services/cookie'
+import { resolveStoreId } from '../services/cookieStoreContext'
 import ruleService, {
   ACCOUNT_PARAM,
   findRuleForRequest,
@@ -33,9 +34,9 @@ async function syncAvatar(accountName: string) {
   }
 }
 
-async function syncAccounts() {
-  const usernameCookie = await cookie.get('dotcom_user')
-  const sessionCookie = await cookie.get('user_session')
+async function syncAccounts(storeId?: string) {
+  const usernameCookie = await cookie.get('dotcom_user', { storeId })
+  const sessionCookie = await cookie.get('user_session', { storeId })
 
   if (!usernameCookie || !sessionCookie) {
     return
@@ -46,8 +47,8 @@ async function syncAccounts() {
     return
   }
 
-  await accountService.upsert(account, await cookie.getAll())
-  const accounts = await accountService.getAll()
+  await accountService.upsert(account, await cookie.getAll({ storeId }))
+  const accounts = await accountService.getAll({ storeId })
   console.info('synced accounts', accounts)
 
   await updateDynamicRequestRules()
@@ -140,7 +141,7 @@ function watchAutoSwitchRequests() {
         }
 
         console.log('onBeforeRequest: found an auto switch rule for url', details.url, rule)
-        accountService.switchTo(rule.account)
+        accountService.switchTo(rule.account, { storeId: details.cookieStoreId })
       })
     },
     {
@@ -167,21 +168,22 @@ function watchCookies() {
     }
 
     console.info('New dotcom_user cookie', cookie.value)
-    await syncAccounts()
+    await syncAccounts(cookie.storeId)
   })
 }
 
-function handleMessage(message: RequestMessage) {
+function handleMessage(message: RequestMessage, senderStoreId?: string) {
   const { type } = message
+  const storeId = resolveStoreId(message.cookieStoreId, senderStoreId)
   switch (type) {
     case 'getAccounts':
       return accountService.getAllNames()
     case 'switchAccount':
-      return accountService.switchTo(message.account)
+      return accountService.switchTo(message.account, { storeId })
     case 'removeAccount':
       return removeAccount(message.account)
     case 'clearCookies':
-      return cookie.clear()
+      return cookie.clear({ storeId })
     case 'getAutoSwitchRules':
       return ruleService.getAll()
   }
@@ -189,9 +191,9 @@ function handleMessage(message: RequestMessage) {
 
 function listenMessage() {
   browser.runtime.onMessage.addListener(
-    async (request: RequestMessage, _sender): Promise<Response<unknown>> => {
+    async (request: RequestMessage, sender): Promise<Response<unknown>> => {
       try {
-        const data = await handleMessage(request)
+        const data = await handleMessage(request, sender.tab?.cookieStoreId)
         return { success: true, data }
       } catch (error: unknown) {
         return { success: false, error: error as Error }

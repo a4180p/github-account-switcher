@@ -85,6 +85,7 @@ function getGitHubTabAdapter(tab: Tabs.Tab | undefined) {
 
   return {
     currentUrl,
+    storeId: tab.cookieStoreId,
     loadRules: () => rule.getAll(),
     navigate: async (url: string) => {
       await browser.tabs.update(tab.id!, { url })
@@ -97,7 +98,9 @@ export default function Accounts() {
   const [accounts, setAccounts] = useState<Account[]>([])
 
   useEffect(() => {
-    accountService.getAll().then(setAccounts)
+    getCurrentTab().then((tab) => {
+      accountService.getAll({ storeId: tab?.cookieStoreId }).then(setAccounts)
+    })
   }, [])
 
   async function handleLogin() {
@@ -107,7 +110,7 @@ export default function Accounts() {
       await startAddAccountLogin({
         currentUrl: adapter.currentUrl,
         loadRules: adapter.loadRules,
-        clearCookies: () => cookie.clear(),
+        clearCookies: () => cookie.clear({ storeId: adapter.storeId }),
         navigate: adapter.navigate,
       })
     } else {
@@ -126,7 +129,8 @@ export default function Accounts() {
         accountName: username,
         currentUrl: adapter.currentUrl,
         loadRules: adapter.loadRules,
-        switchAccount: (accountName) => accountService.switchTo(accountName),
+        switchAccount: (accountName) =>
+          accountService.switchTo(accountName, { storeId: adapter.storeId }),
         reload: adapter.reload,
         navigate: adapter.navigate,
       })

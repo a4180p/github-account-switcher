@@ -1,6 +1,6 @@
 import { Rule } from './services/rule'
 
-type Message<T extends string, P = {}> = { type: T } & P
+type Message<T extends string, P = {}> = { type: T; cookieStoreId?: string } & P
 
 type ErrorResponse = { success: false; error: Error }
 export type Response<T = void> = { success: true; data: T } | ErrorResponse
