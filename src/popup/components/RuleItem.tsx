@@ -1,9 +1,16 @@
 import { Close, Done, Edit } from '@mui/icons-material'
-import { Box, IconButton, TextField, Tooltip } from '@mui/material'
+import { Box, IconButton, MenuItem, TextField, Tooltip } from '@mui/material'
 import { useState } from 'react'
-import { Rule, validateAccount, validateRule, validateUrlPattern } from '../../services/rule'
+import {
+  IGNORE_ACCOUNT,
+  Rule,
+  validateAccount,
+  validateRule,
+  validateUrlPattern,
+} from '../../services/rule'
 
 type Props = {
+  accounts: string[]
   initialValue?: Rule
   mode?: 'view' | 'edit'
   onDone: (rule: Rule) => void
@@ -11,13 +18,21 @@ type Props = {
 }
 
 export default function RuleItem(props: Props) {
-  const { initialValue, mode, onDone, onDelete } = props
+  const { accounts, initialValue, mode, onDone, onDelete } = props
   const [rule, setRule] = useState<Rule>(
     initialValue ?? { id: Date.now(), urlPattern: '', account: '' },
   )
   const [isEditing, setIsEditing] = useState(mode === 'edit')
   const [urlPatternValidation, setUrlPatternValidation] = useState<string>()
   const [accountValidation, setAccountValidation] = useState<string>()
+
+  const accountOptions = [...accounts]
+  if (!accountOptions.includes(IGNORE_ACCOUNT)) {
+    accountOptions.push(IGNORE_ACCOUNT)
+  }
+  if (rule.account && !accountOptions.includes(rule.account)) {
+    accountOptions.unshift(rule.account)
+  }
 
   function handleEdit() {
     setIsEditing(true)
@@ -77,16 +92,25 @@ export default function RuleItem(props: Props) {
       </Box>
       <Box width={150} flexShrink={0}>
         <TextField
+          select
           size="medium"
           variant="standard"
           fullWidth
-          placeholder="GitHub account"
           error={!!accountValidation}
           helperText={accountValidation}
           value={rule.account}
           onChange={handleAccountChange}
           disabled={!isEditing}
-        />
+        >
+          <MenuItem value="" disabled>
+            Select account
+          </MenuItem>
+          {accountOptions.map((account) => (
+            <MenuItem key={account} value={account}>
+              {account === IGNORE_ACCOUNT ? 'ignore' : account}
+            </MenuItem>
+          ))}
+        </TextField>
       </Box>
       <Box display="flex" flexShrink={0}>
         {!isEditing && (

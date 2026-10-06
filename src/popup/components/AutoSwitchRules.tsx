@@ -1,15 +1,18 @@
 import { AddCircle } from '@mui/icons-material'
 import { Alert, Box, Button, Link } from '@mui/material'
 import { useEffect, useState } from 'react'
+import accountService from '../../services/account'
 import ruleService, { Rule } from '../../services/rule'
 import RuleItem from './RuleItem'
 
 export default function AutoSwitchRules() {
   const [rules, setRules] = useState<Rule[]>([])
+  const [accounts, setAccounts] = useState<string[]>([])
   const [isAdding, setIsAdding] = useState(false)
 
   useEffect(() => {
     ruleService.getAll().then(setRules)
+    accountService.getAllNames().then(setAccounts)
   }, [])
 
   function startAdding() {
@@ -61,9 +64,17 @@ export default function AutoSwitchRules() {
         }}
       >
         {rules.map((rule) => (
-          <RuleItem key={rule.id} initialValue={rule} onDone={updateRule} onDelete={removeRule} />
+          <RuleItem
+            key={rule.id}
+            accounts={accounts}
+            initialValue={rule}
+            onDone={updateRule}
+            onDelete={removeRule}
+          />
         ))}
-        {isAdding && <RuleItem mode="edit" onDone={addRule} onDelete={stopAdding} />}
+        {isAdding && (
+          <RuleItem accounts={accounts} mode="edit" onDone={addRule} onDelete={stopAdding} />
+        )}
       </Box>
 
       <Button
