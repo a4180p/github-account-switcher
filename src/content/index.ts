@@ -1,5 +1,6 @@
 import browser from 'webextension-polyfill'
-import { isNormalGitHubUrl, removeAccount } from '../shared'
+import { getAddAccountLoginPath, getManualSwitchPath } from '../services/accountSwitchingSemantics'
+import { removeAccount } from '../shared'
 import {
   ClearCookiesMessage,
   GetAccountsMessage,
@@ -68,23 +69,32 @@ async function getAutoSwitchRules() {
   return res?.success ? res.data : []
 }
 
+function navigateOnGitHub(path: string) {
+  const url = new URL(path, window.location.origin)
+  if (url.origin !== window.location.origin) {
+    throw new Error('Unexpected redirect origin')
+  }
+
+  window.location.pathname = url.pathname
+  window.location.search = url.search
+}
+
 async function addAccount() {
   await browser.runtime.sendMessage({ type: 'clearCookies' } as ClearCookiesMessage)
   const autoSwitchRules = await getAutoSwitchRules()
 
-  window.location.href = isNormalGitHubUrl(window.location.href, autoSwitchRules)
-    ? `/login?return_to=${encodeURIComponent(window.location.href)}`
-    : '/login'
+  navigateOnGitHub(getAddAccountLoginPath(window.location.href, autoSwitchRules))
 }
 
 async function switchAccount(account: string) {
   await browser.runtime.sendMessage({ type: 'switchAccount', account })
   const autoSwitchRules = await getAutoSwitchRules()
 
-  if (isNormalGitHubUrl(window.location.href, autoSwitchRules)) {
+  const nextPath = getManualSwitchPath(window.location.href, autoSwitchRules)
+  if (!nextPath) {
     window.location.reload()
   } else {
-    window.location.href = '/'
+    navigateOnGitHub(nextPath)
   }
 }
 

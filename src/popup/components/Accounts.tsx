@@ -17,9 +17,13 @@ import {
 import { useEffect, useState } from 'react'
 import browser, { Tabs } from 'webextension-polyfill'
 import accountService, { Account } from '../../services/account'
+import {
+  getAddAccountLoginDestination,
+  getManualSwitchDestination,
+} from '../../services/accountSwitchingSemantics'
 import cookie from '../../services/cookie'
 import rule from '../../services/rule'
-import { isGitHubUrl, isNormalGitHubUrl, removeAccount } from '../../shared'
+import { isGitHubUrl, removeAccount } from '../../shared'
 
 const StyledBadge = styled(Badge)(({ theme }) => ({
   '& .MuiBadge-badge': {
@@ -89,12 +93,10 @@ export default function Accounts() {
     const tab = await getCurrentTab()
     const rules = await rule.getAll()
 
-    if (isNormalGitHubUrl(tab?.url, rules)) {
+    if (isGitHubUrl(tab?.url)) {
       await browser.tabs.update(tab?.id!, {
-        url: `https://github.com/login?return_to=${encodeURIComponent(tab?.url ?? '')}`,
+        url: getAddAccountLoginDestination(tab.url, rules),
       })
-    } else if (isGitHubUrl(tab?.url)) {
-      await browser.tabs.update(tab?.id!, { url: 'https://github.com/login' })
     } else {
       await browser.tabs.create({ url: 'https://github.com/login' })
     }
@@ -108,11 +110,13 @@ export default function Accounts() {
     const tab = await getCurrentTab()
     const rules = await rule.getAll()
 
-    // If the current tab is a normal GitHub page, reload it.
-    if (isNormalGitHubUrl(tab?.url, rules)) {
-      await browser.tabs.reload(tab?.id!)
-    } else if (isGitHubUrl(tab?.url)) {
-      await browser.tabs.update(tab?.id!, { url: 'https://github.com' })
+    if (isGitHubUrl(tab?.url)) {
+      const destination = getManualSwitchDestination(tab.url, rules)
+      if (destination.kind === 'reload') {
+        await browser.tabs.reload(tab?.id!)
+      } else {
+        await browser.tabs.update(tab?.id!, { url: destination.url })
+      }
     } else {
       await browser.tabs.create({ url: 'https://github.com' })
     }
