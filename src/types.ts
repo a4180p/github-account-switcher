@@ -20,9 +20,13 @@ export type RemoveAccountResponse = Response
 export type GetAutoSwitchRulesMessage = Message<'getAutoSwitchRules'>
 export type GetAutoSwitchRulesResponse = Response<Rule[]>
 
+export type SaveAvatarMessage = Message<'saveAvatar', { account: string; avatarUrl: string }>
+export type SaveAvatarResponse = Response
+
 export type RequestMessage =
   | GetAccountsMessage
   | ClearCookiesMessage
   | SwitchAccountMessage
   | RemoveAccountMessage
   | GetAutoSwitchRulesMessage
+  | SaveAvatarMessage

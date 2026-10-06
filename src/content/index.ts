@@ -7,6 +7,7 @@ import {
   GetAccountsResponse,
   GetAutoSwitchRulesMessage,
   GetAutoSwitchRulesResponse,
+  SaveAvatarMessage,
 } from '../types'
 import './index.css'
 // Script that will be injected in the main page
@@ -21,12 +22,39 @@ import {
   createDivider,
 } from './ui'
 
+function getCurrentAvatarUrl(accountName: string) {
+  return (
+    document.querySelector<HTMLImageElement>('img.avatar-user')?.src ??
+    document.querySelector<HTMLImageElement>(`img[alt="@${accountName}"]`)?.src
+  )
+}
+
+async function syncCurrentAvatar() {
+  const currentAccount = document.querySelector<HTMLMetaElement>('meta[name="user-login"]')?.content
+  if (!currentAccount) {
+    return
+  }
+
+  const avatarUrl = getCurrentAvatarUrl(currentAccount)
+  if (!avatarUrl) {
+    return
+  }
+
+  await browser.runtime.sendMessage({
+    type: 'saveAvatar',
+    account: currentAccount,
+    avatarUrl,
+  } as SaveAvatarMessage)
+}
+
 async function addSwitchUserMenu(logoutForm: HTMLFormElement) {
   const currentAccount = document.querySelector<HTMLMetaElement>('meta[name="user-login"]')?.content
   if (!currentAccount) {
     console.info('no current account found')
     return
   }
+
+  await syncCurrentAvatar()
 
   if (!document.getElementById(ADD_ACCOUNT_BUTTON_ID)) {
     // Add the "Add another account" menu item and a divider
@@ -166,7 +194,10 @@ function watchDom() {
 
 async function init() {
   injectScript()
-  ready(watchDom)
+  ready(() => {
+    syncCurrentAvatar()
+    watchDom()
+  })
 
   document.addEventListener('click', (event) => {
     const target = event.target as HTMLElement

@@ -186,6 +186,8 @@ function handleMessage(message: RequestMessage, senderStoreId?: string) {
       return cookie.clear({ storeId })
     case 'getAutoSwitchRules':
       return ruleService.getAll()
+    case 'saveAvatar':
+      return accountService.saveAvatar(message.account, message.avatarUrl)
   }
 }
 
