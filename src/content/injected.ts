@@ -1,7 +1,7 @@
+import { ACCOUNT_PARAM } from '../services/ruleSemantics'
+
 type FetchFn = typeof fetch
 type FetchInput = Parameters<FetchFn>[0]
-
-const ACCOUNT_PARAM = '__account__'
 
 class PatchedResponse extends Response {
   constructor(private readonly response: Response) {

@@ -71,6 +71,26 @@ export function validateAccount(account: string): ValidationResult {
   }
 }
 
+export function isGitHubUrl(url: string | undefined) {
+  if (!url) {
+    return false
+  }
+
+  return /^https:\/\/(.+?\.)?github\.com/.test(url)
+}
+
+export function isNormalGitHubUrl(url: string | undefined, rules: Rule[]) {
+  if (!url) {
+    return false
+  }
+
+  if (!isGitHubUrl(url)) {
+    return false
+  }
+
+  return getRuleAction(url, rules) !== 'switch'
+}
+
 function getRulePattern(rule: Rule): RegExp | undefined {
   if (!validateUrlPattern(rule.urlPattern).valid) {
     return
