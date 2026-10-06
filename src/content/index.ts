@@ -1,6 +1,5 @@
 import browser from 'webextension-polyfill'
-import { completeManualSwitch } from '../services/accountSwitching'
-import { getAddAccountLoginPath } from '../services/accountSwitchingSemantics'
+import { completeManualSwitch, startAddAccountLogin } from '../services/accountSwitching'
 import { removeAccount } from '../shared'
 import {
   ClearCookiesMessage,
@@ -80,11 +79,24 @@ function navigateOnGitHub(path: string) {
   window.location.search = url.search
 }
 
-async function addAccount() {
-  await browser.runtime.sendMessage({ type: 'clearCookies' } as ClearCookiesMessage)
-  const autoSwitchRules = await getAutoSwitchRules()
+function navigateToGitHubUrl(url: string) {
+  const nextUrl = new URL(url, window.location.origin)
+  if (nextUrl.origin !== window.location.origin) {
+    throw new Error('Unexpected redirect origin')
+  }
 
-  navigateOnGitHub(getAddAccountLoginPath(window.location.href, autoSwitchRules))
+  navigateOnGitHub(`${nextUrl.pathname}${nextUrl.search}`)
+}
+
+async function addAccount() {
+  await startAddAccountLogin({
+    currentUrl: window.location.href,
+    loadRules: getAutoSwitchRules,
+    clearCookies: async () => {
+      await browser.runtime.sendMessage({ type: 'clearCookies' } as ClearCookiesMessage)
+    },
+    navigate: (url) => navigateToGitHubUrl(url),
+  })
 }
 
 async function switchAccount(account: string) {

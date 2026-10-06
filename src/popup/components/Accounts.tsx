@@ -17,8 +17,7 @@ import {
 import { useEffect, useState } from 'react'
 import browser, { Tabs } from 'webextension-polyfill'
 import accountService, { Account } from '../../services/account'
-import { completeManualSwitch } from '../../services/accountSwitching'
-import { getAddAccountLoginDestination } from '../../services/accountSwitchingSemantics'
+import { completeManualSwitch, startAddAccountLogin } from '../../services/accountSwitching'
 import cookie from '../../services/cookie'
 import rule from '../../services/rule'
 import { isGitHubUrl, removeAccount } from '../../shared'
@@ -86,17 +85,20 @@ export default function Accounts() {
   }, [])
 
   async function handleLogin() {
-    await cookie.clear()
-
     const tab = await getCurrentTab()
-    const rules = await rule.getAll()
     const currentUrl = tab?.url
 
     if (currentUrl && isGitHubUrl(currentUrl) && tab?.id) {
-      await browser.tabs.update(tab.id, {
-        url: getAddAccountLoginDestination(currentUrl, rules),
+      await startAddAccountLogin({
+        currentUrl,
+        loadRules: () => rule.getAll(),
+        clearCookies: () => cookie.clear(),
+        navigate: async (url) => {
+          await browser.tabs.update(tab.id, { url })
+        },
       })
     } else {
+      await cookie.clear()
       await browser.tabs.create({ url: 'https://github.com/login' })
     }
 

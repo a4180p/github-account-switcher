@@ -1,4 +1,7 @@
-import { getManualSwitchDestination } from './accountSwitchingSemantics'
+import {
+  getAddAccountLoginDestination,
+  getManualSwitchDestination,
+} from './accountSwitchingSemantics'
 import type { Rule } from './ruleSemantics'
 
 type Effect = () => void | Promise<void>
@@ -15,6 +18,13 @@ type ManualSwitchOptions = {
   navigate: Navigate
 }
 
+type AddAccountLoginOptions = {
+  currentUrl: string
+  loadRules: LoadRules
+  clearCookies: Effect
+  navigate: Navigate
+}
+
 export async function completeManualSwitch(options: ManualSwitchOptions) {
   const { accountName, currentUrl, loadRules, switchAccount, reload, navigate } = options
 
@@ -28,4 +38,14 @@ export async function completeManualSwitch(options: ManualSwitchOptions) {
   }
 
   await navigate(destination.url)
+}
+
+export async function startAddAccountLogin(options: AddAccountLoginOptions) {
+  const { currentUrl, loadRules, clearCookies, navigate } = options
+
+  await clearCookies()
+
+  const rules = await loadRules()
+  const destination = getAddAccountLoginDestination(currentUrl, rules)
+  await navigate(destination)
 }
