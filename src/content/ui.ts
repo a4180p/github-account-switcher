@@ -15,7 +15,7 @@ function uiLook() {
 const classicLook = {
   createDivider() {
     return createElement('div', {
-      class: 'dropdown-divider'
+      class: 'dropdown-divider',
     })
   },
   createAddAccountLink() {
@@ -23,7 +23,7 @@ const classicLook = {
       id: ADD_ACCOUNT_BUTTON_ID,
       href: '/login',
       class: `dropdown-item ${ADD_ACCOUNT_BUTTON_ID}`,
-      children: 'Add another account'
+      children: 'Add another account',
     })
   },
   createAccountItem(account: string) {
@@ -36,10 +36,7 @@ const classicLook = {
           'data-account': account,
           class: `dropdown-item btn-link ${ACCOUNT_ITEM_CLASS}`,
           role: 'menuitem',
-          children: [
-            'Switch to ',
-            createElement('b', { children: account }),
-          ],
+          children: ['Switch to ', createElement('b', { children: account })],
         }),
         createElement('button', {
           title: 'Remove account',
@@ -47,15 +44,15 @@ const classicLook = {
           'data-account': account,
           children: createRemoveIcon(),
         }),
-      ]
+      ],
     })
-  }
+  },
 }
 
 const newLook = {
   createDivider() {
     return createElement('li', {
-      class: 'ActionList-sectionDivider'
+      class: 'ActionList-sectionDivider',
     })
   },
   createAddAccountLink() {
@@ -69,11 +66,11 @@ const newLook = {
           children: [
             createElement('span', {
               class: 'ActionListItem-label',
-              children: 'Add another account'
-            })
-          ]
-        })
-      ]
+              children: 'Add another account',
+            }),
+          ],
+        }),
+      ],
     })
   },
   createAccountItem(account: string) {
@@ -88,35 +85,32 @@ const newLook = {
           children: [
             createElement('span', {
               class: 'ActionListItem-label',
-              children: [
-                'Switch to ',
-                createElement('b', { children: account }),
-              ]
-            })
-          ]
+              children: ['Switch to ', createElement('b', { children: account })],
+            }),
+          ],
         }),
         createElement('button', {
           title: 'Remove account',
           'data-account': account,
           class: `btn-link color-fg-danger ${ACCOUNT_REMOVE_CLASS}`,
           children: createRemoveIcon(),
-        })
-      ]
+        }),
+      ],
     })
-  }
+  },
 }
 
 export function createDivider() {
   const look = uiLook()
-  return look.createDivider();
+  return look.createDivider()
 }
 
 export function createAddAccountLink() {
   const look = uiLook()
-  return look.createAddAccountLink();
+  return look.createAddAccountLink()
 }
 
 export function createAccountItem(account: string) {
   const look = uiLook()
-  return look.createAccountItem(account);
+  return look.createAccountItem(account)
 }

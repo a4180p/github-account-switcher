@@ -3,7 +3,7 @@ import browser from 'webextension-polyfill'
 export async function setBadgeText(text: string) {
   const action = browser.action || browser.browserAction
   await action.setBadgeText({
-    text
+    text,
   })
   await action.setBadgeBackgroundColor({
     color: '#44b700',

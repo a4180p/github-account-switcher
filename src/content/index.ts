@@ -11,7 +11,14 @@ import './index.css'
 // Script that will be injected in the main page
 import { createElement } from './createElement'
 import injectedScript from './injected?script&module'
-import { ACCOUNT_ITEM_CLASS, ACCOUNT_REMOVE_CLASS, ADD_ACCOUNT_BUTTON_ID, createAccountItem, createAddAccountLink, createDivider } from './ui'
+import {
+  ACCOUNT_ITEM_CLASS,
+  ACCOUNT_REMOVE_CLASS,
+  ADD_ACCOUNT_BUTTON_ID,
+  createAccountItem,
+  createAddAccountLink,
+  createDivider,
+} from './ui'
 
 async function addSwitchUserMenu(logoutForm: HTMLFormElement) {
   const currentAccount = document.querySelector<HTMLMetaElement>('meta[name="user-login"]')?.content
@@ -23,10 +30,7 @@ async function addSwitchUserMenu(logoutForm: HTMLFormElement) {
   if (!document.getElementById(ADD_ACCOUNT_BUTTON_ID)) {
     // Add the "Add another account" menu item and a divider
     const fragment = createElement('fragment', {
-      children: [
-        createAddAccountLink(),
-        createDivider(),
-      ],
+      children: [createAddAccountLink(), createDivider()],
     })
 
     // Insert the elements before the logoutForm

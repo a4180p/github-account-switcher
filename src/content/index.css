@@ -18,7 +18,9 @@ details-menu button.gh-account-switcher__account-remove {
   box-shadow: none;
 }
 
-details-menu .gh-account-switcher__account-wrapper:hover button.gh-account-switcher__account-remove {
+details-menu
+  .gh-account-switcher__account-wrapper:hover
+  button.gh-account-switcher__account-remove {
   display: block;
 }
 

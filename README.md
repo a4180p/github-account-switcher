@@ -9,7 +9,6 @@ The GitHub Account Switcher is a user-friendly browser extension for Chrome, Edg
 </tr>
 </table>
 
-
 ## Features
 
 - Effortless account switching: Instantly switch between multiple GitHub accounts with a single click.
