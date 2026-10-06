@@ -29,11 +29,27 @@ const invalidRule: Rule = {
   account: 'broken',
 }
 
+const complexRule: Rule = {
+  id: 4,
+  urlPattern: '(a+)+$',
+  account: 'work_account',
+}
+
+const negativeLookaheadRule: Rule = {
+  id: 5,
+  urlPattern:
+    '^https://github\\.com/(?!company-(?:archive|build|billing|docs|internal|ops|platform|security)(?:/|$)).*',
+  account: 'work_account',
+}
+
 assert.equal(validateUrlPattern('[').valid, false)
 assert.equal(validateAccount(IGNORE_ACCOUNT).valid, true)
 assert.equal(validateRule(switchRule).valid, true)
 assert.equal(validateRule(invalidRule).urlPatternMessage, 'Invalid regular expression')
+assert.equal(validateRule(complexRule).urlPatternMessage, 'Regular expression is too complex')
+assert.equal(validateRule(negativeLookaheadRule).valid, true)
 assert.throws(() => assertValidRule(invalidRule), /Invalid regular expression/)
+assert.throws(() => assertValidRule(complexRule), /Regular expression is too complex/)
 assert.equal(
   getRuleAction('https://github.com/corp-team/project', [invalidRule, switchRule]),
   'switch',
@@ -45,5 +61,10 @@ assert.equal(
     ?.account,
   'work_account',
 )
+assert.equal(
+  getRuleAction('https://github.com/open-source/project', [negativeLookaheadRule]),
+  'switch',
+)
+assert.equal(getRuleAction('https://github.com/company-billing', [negativeLookaheadRule]), 'none')
 
 console.log('auto-switch rule semantics OK')

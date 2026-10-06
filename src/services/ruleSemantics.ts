@@ -7,6 +7,9 @@ export type Rule = {
 export const IGNORE_ACCOUNT = 'ignore'
 export const ACCOUNT_PARAM = '__account__'
 
+const MAX_URL_PATTERN_LENGTH = 500
+const rulePatternCache = new Map<string, RegExp | null>()
+
 type ValidationResult = {
   valid: boolean
   message?: string
@@ -31,6 +34,16 @@ function isValidGitHubAccount(account: string) {
   return /^(?![-_])(?!.*[-_]{2})[A-Za-z0-9_-]+(?<![-_])$/g.test(account)
 }
 
+function getUnsafeRegexReason(regex: string) {
+  if (regex.length > MAX_URL_PATTERN_LENGTH) {
+    return 'Regular expression is too long'
+  }
+
+  if (/\((?:[^()\\]|\\.)*[+*{](?:[^()\\]|\\.)*\)[+*{]/.test(regex)) {
+    return 'Regular expression is too complex'
+  }
+}
+
 export function validateUrlPattern(urlPattern: string): ValidationResult {
   if (urlPattern.trim() === '') {
     return {
@@ -43,6 +56,14 @@ export function validateUrlPattern(urlPattern: string): ValidationResult {
     return {
       valid: false,
       message: 'Invalid regular expression',
+    }
+  }
+
+  const unsafeRegexReason = getUnsafeRegexReason(urlPattern)
+  if (unsafeRegexReason) {
+    return {
+      valid: false,
+      message: unsafeRegexReason,
     }
   }
 
@@ -118,11 +139,19 @@ export function isNormalGitHubUrl(url: string | undefined, rules: Rule[]) {
 }
 
 function getRulePattern(rule: Rule): RegExp | undefined {
+  const cachedPattern = rulePatternCache.get(rule.urlPattern)
+  if (cachedPattern !== undefined) {
+    return cachedPattern ?? undefined
+  }
+
   if (!validateUrlPattern(rule.urlPattern).valid) {
+    rulePatternCache.set(rule.urlPattern, null)
     return
   }
 
-  return new RegExp(rule.urlPattern)
+  const pattern = new RegExp(rule.urlPattern)
+  rulePatternCache.set(rule.urlPattern, pattern)
+  return pattern
 }
 
 export function findMatchingRule(url: string, rules: Rule[]): Rule | undefined {
