@@ -23,10 +23,19 @@ import {
 } from './ui'
 
 function getCurrentAvatarUrl(accountName: string) {
-  return (
-    document.querySelector<HTMLImageElement>('img.avatar-user')?.src ??
-    document.querySelector<HTMLImageElement>(`img[alt="@${accountName}"]`)?.src
-  )
+  const selectors = [
+    `.AppHeader-user img[alt="@${accountName}"]`,
+    `#user-links img[alt="@${accountName}"]`,
+    `summary img[alt="@${accountName}"]`,
+    `img[alt="@${accountName}"]`,
+  ]
+
+  for (const selector of selectors) {
+    const avatarUrl = document.querySelector<HTMLImageElement>(selector)?.src
+    if (avatarUrl) {
+      return avatarUrl
+    }
+  }
 }
 
 async function syncCurrentAvatar() {
