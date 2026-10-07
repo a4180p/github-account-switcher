@@ -16,10 +16,9 @@ import {
 } from '@mui/material'
 import { useEffect, useState } from 'react'
 import browser, { Tabs } from 'webextension-polyfill'
-import accountService, { Account } from '../../services/account'
+import type { Account } from '../../services/account'
 import { completeManualSwitch, startAddAccountLogin } from '../../services/accountSwitching'
-import cookie from '../../services/cookie'
-import { listAccounts } from '../../services/githubSession'
+import { clearSession, listAccounts, switchAccount } from '../../services/githubSession'
 import rule from '../../services/rule'
 import { isGitHubUrl, removeAccount } from '../../shared'
 
@@ -111,11 +110,11 @@ export default function Accounts() {
       await startAddAccountLogin({
         currentUrl: adapter.currentUrl,
         loadRules: adapter.loadRules,
-        clearCookies: () => cookie.clear({ storeId: adapter.storeId }),
+        clearCookies: () => clearSession({ storeId: adapter.storeId }),
         navigate: adapter.navigate,
       })
     } else {
-      await cookie.clear()
+      await clearSession()
       await browser.tabs.create({ url: 'https://github.com/login' })
     }
 
@@ -130,13 +129,12 @@ export default function Accounts() {
         accountName: username,
         currentUrl: adapter.currentUrl,
         loadRules: adapter.loadRules,
-        switchAccount: (accountName) =>
-          accountService.switchTo(accountName, { storeId: adapter.storeId }),
+        switchAccount: (accountName) => switchAccount(accountName, { storeId: adapter.storeId }),
         reload: adapter.reload,
         navigate: adapter.navigate,
       })
     } else {
-      await accountService.switchTo(username)
+      await switchAccount(username)
       await browser.tabs.create({ url: 'https://github.com' })
     }
 

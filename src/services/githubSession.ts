@@ -21,3 +21,11 @@ export function listAccounts(context: CookieStoreContext = {}) {
 export function listAccountNames() {
   return accountService.getAllNames()
 }
+
+export function clearSession(context: CookieStoreContext = {}) {
+  return cookie.clear(context)
+}
+
+export function switchAccount(accountName: string, context: CookieStoreContext = {}) {
+  return accountService.switchTo(accountName, context)
+}

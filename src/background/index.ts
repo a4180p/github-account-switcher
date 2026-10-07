@@ -1,9 +1,14 @@
 import browser, { DeclarativeNetRequest, Runtime, WebRequest } from 'webextension-polyfill'
 import accountService from '../services/account'
 import { setBadgeText } from '../services/badge'
-import cookie from '../services/cookie'
 import { resolveStoreId } from '../services/cookieStoreContext'
-import { captureCurrentAccount, listAccountNames, listAccounts } from '../services/githubSession'
+import {
+  captureCurrentAccount,
+  clearSession,
+  listAccountNames,
+  listAccounts,
+  switchAccount,
+} from '../services/githubSession'
 import ruleService, {
   ACCOUNT_PARAM,
   findRuleForRequest,
@@ -180,11 +185,11 @@ function handleMessage(message: RequestMessage, senderStoreId?: string) {
     case 'getAccounts':
       return listAccountNames()
     case 'switchAccount':
-      return accountService.switchTo(message.account, { storeId })
+      return switchAccount(message.account, { storeId })
     case 'removeAccount':
       return removeAccount(message.account)
     case 'clearCookies':
-      return cookie.clear({ storeId })
+      return clearSession({ storeId })
     case 'getAutoSwitchRules':
       return ruleService.getAll()
     case 'saveAvatar':
