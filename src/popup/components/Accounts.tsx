@@ -16,9 +16,13 @@ import {
 } from '@mui/material'
 import { useEffect, useState } from 'react'
 import browser, { Tabs } from 'webextension-polyfill'
-import type { Account } from '../../services/account'
 import { completeManualSwitch, startAddAccountLogin } from '../../services/accountSwitching'
-import { clearSession, listAccounts, switchAccount } from '../../services/githubSession'
+import {
+  type Account,
+  clearSession,
+  listAccounts,
+  switchAccount,
+} from '../../services/githubSession'
 import rule from '../../services/rule'
 import { isGitHubUrl, removeAccount } from '../../shared'
 

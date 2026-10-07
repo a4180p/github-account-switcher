@@ -1,13 +1,16 @@
 import browser, { DeclarativeNetRequest, Runtime, WebRequest } from 'webextension-polyfill'
-import accountService from '../services/account'
 import { setBadgeText } from '../services/badge'
 import { resolveStoreId } from '../services/cookieStoreContext'
 import {
   captureCurrentAccount,
   clearSession,
+  getCookieHeader,
   listAccountNames,
   listAccounts,
+  removeAccount as removeStoredAccount,
+  saveAvatar,
   switchAccount,
+  syncAvatar,
 } from '../services/githubSession'
 import ruleService, {
   ACCOUNT_PARAM,
@@ -33,21 +36,6 @@ const WEB_REQUEST_RESOURCE_TYPES: WebRequest.ResourceType[] = [
   'xmlhttprequest',
 ]
 
-async function syncAvatar(accountName: string) {
-  try {
-    const res = await fetch(`https://github.com/${accountName}.png?size=100`)
-    if (res.status !== 200) {
-      return false
-    }
-
-    await accountService.saveAvatar(accountName, res.url)
-    return true
-  } catch (error) {
-    console.error('Failed to sync avatar', error)
-    return false
-  }
-}
-
 async function syncAccounts(storeId?: string) {
   const account = await captureCurrentAccount({ storeId })
   if (!account) {
@@ -68,22 +56,13 @@ async function syncAccounts(storeId?: string) {
 }
 
 async function removeAccount(accountName: string) {
-  await accountService.remove(accountName)
+  await removeStoredAccount(accountName)
   await updateDynamicRequestRules()
 }
 
 async function buildCookieValue(accountName: string): Promise<string | null> {
-  const account = await accountService.find(accountName)
-  const cookies = account?.cookies || []
-
-  if (!cookies.length) {
-    return null
-  }
-
-  return cookies
-    .map((cookie) => `${cookie.name}=${cookie.value}`)
-    .concat(`${ACCOUNT_PARAM}=${accountName}`)
-    .join('; ')
+  const cookieHeader = await getCookieHeader(accountName)
+  return cookieHeader ? `${cookieHeader}; ${ACCOUNT_PARAM}=${accountName}` : null
 }
 
 async function buildAddRules(): Promise<DeclarativeNetRequest.Rule[]> {
@@ -147,7 +126,7 @@ function watchAutoSwitchRequests() {
         }
 
         console.log('onBeforeRequest: found an auto switch rule for url', details.url, rule)
-        accountService.switchTo(rule.account, { storeId: details.cookieStoreId })
+        switchAccount(rule.account, { storeId: details.cookieStoreId })
       })
     },
     {
@@ -193,7 +172,7 @@ function handleMessage(message: RequestMessage, senderStoreId?: string) {
     case 'getAutoSwitchRules':
       return ruleService.getAll()
     case 'saveAvatar':
-      return accountService.saveAvatar(message.account, message.avatarUrl)
+      return saveAvatar(message.account, message.avatarUrl)
   }
 }
 

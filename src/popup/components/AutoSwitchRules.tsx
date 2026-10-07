@@ -1,7 +1,7 @@
 import { AddCircle } from '@mui/icons-material'
 import { Alert, Box, Button, Link } from '@mui/material'
 import { useEffect, useState, type DragEvent } from 'react'
-import accountService from '../../services/account'
+import { listAccountNames } from '../../services/githubSession'
 import { reorderRules } from '../../services/ruleOrder'
 import ruleService, { Rule } from '../../services/rule'
 import RuleItem from './RuleItem'
@@ -14,7 +14,7 @@ export default function AutoSwitchRules() {
 
   useEffect(() => {
     ruleService.getAll().then(setRules)
-    accountService.getAllNames().then(setAccounts)
+    listAccountNames().then(setAccounts)
   }, [])
 
   function startAdding() {
