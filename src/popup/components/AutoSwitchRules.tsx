@@ -1,60 +1,18 @@
 import { AddCircle } from '@mui/icons-material'
 import { Alert, Box, Button, Link } from '@mui/material'
-import { useEffect, useState, type DragEvent } from 'react'
-import { listAccountNames } from '../../services/githubSession'
-import { reorderRules } from '../../services/ruleOrder'
-import ruleService, { Rule } from '../../services/rule'
+import { useEffect, useSyncExternalStore } from 'react'
+import ruleEditor from '../ruleEditor'
 import RuleItem from './RuleItem'
 
 export default function AutoSwitchRules() {
-  const [rules, setRules] = useState<Rule[]>([])
-  const [accounts, setAccounts] = useState<string[]>([])
-  const [draggedRuleId, setDraggedRuleId] = useState<number>()
-  const [isAdding, setIsAdding] = useState(false)
+  const { rules, accounts, isAdding, isPending, error } = useSyncExternalStore(
+    ruleEditor.subscribe,
+    ruleEditor.getSnapshot,
+  )
 
   useEffect(() => {
-    ruleService.getAll().then(setRules)
-    listAccountNames().then(setAccounts)
+    void ruleEditor.load()
   }, [])
-
-  function startAdding() {
-    setIsAdding(true)
-  }
-
-  function stopAdding() {
-    setIsAdding(false)
-  }
-
-  async function addRule(rule: Rule) {
-    await ruleService.add(rule)
-    setRules(await ruleService.getAll())
-    stopAdding()
-  }
-
-  async function updateRule(rule: Rule) {
-    await ruleService.update(rule)
-    setRules(await ruleService.getAll())
-  }
-
-  async function removeRule(rule: Rule) {
-    await ruleService.remove(rule.id)
-    setRules(await ruleService.getAll())
-  }
-
-  async function moveRule(targetRule: Rule) {
-    if (!draggedRuleId) {
-      return
-    }
-
-    const nextRules = reorderRules(rules, draggedRuleId, targetRule.id)
-    if (nextRules === rules) {
-      return
-    }
-
-    setRules(nextRules)
-    setDraggedRuleId(undefined)
-    await ruleService.replaceAll(nextRules)
-  }
 
   return (
     <Box>
@@ -70,6 +28,12 @@ export default function AutoSwitchRules() {
         .
       </Alert>
 
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {error}
+        </Alert>
+      )}
+
       <Box
         sx={{
           display: 'flex',
@@ -84,28 +48,40 @@ export default function AutoSwitchRules() {
           <RuleItem
             key={rule.id}
             accounts={accounts}
-            draggable={!isAdding}
+            draggable={!isAdding && !isPending}
+            disabled={isPending}
             initialValue={rule}
-            onDone={updateRule}
-            onDelete={removeRule}
-            onDragEnd={() => setDraggedRuleId(undefined)}
-            onDragOver={(event: DragEvent<HTMLDivElement>) => event.preventDefault()}
-            onDragStart={() => setDraggedRuleId(rule.id)}
-            onDrop={() => {
-              void moveRule(rule)
+            onDone={ruleEditor.updateRule}
+            onDelete={ruleEditor.removeRule}
+            onDragEnd={ruleEditor.endDrag}
+            onDragOver={(event) => event.preventDefault()}
+            onDragStart={(event) => {
+              event.dataTransfer.setData('text/plain', String(rule.id))
+              event.dataTransfer.effectAllowed = 'move'
+              ruleEditor.startDrag(rule.id)
+            }}
+            onDrop={(event) => {
+              event.preventDefault()
+              void ruleEditor.moveRule(rule.id)
             }}
           />
         ))}
         {isAdding && (
-          <RuleItem accounts={accounts} mode="edit" onDone={addRule} onDelete={stopAdding} />
+          <RuleItem
+            accounts={accounts}
+            disabled={isPending}
+            mode="edit"
+            onDone={ruleEditor.addRule}
+            onDelete={ruleEditor.stopAdding}
+          />
         )}
       </Box>
 
       <Button
         variant="contained"
         startIcon={<AddCircle />}
-        onClick={startAdding}
-        disabled={isAdding}
+        onClick={ruleEditor.startAdding}
+        disabled={isAdding || isPending}
         sx={{ textTransform: 'none' }}
       >
         Add a Rule

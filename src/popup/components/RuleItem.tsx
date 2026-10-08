@@ -12,10 +12,11 @@ import {
 type Props = {
   accounts: string[]
   draggable?: boolean
+  disabled?: boolean
   initialValue?: Rule
   mode?: 'view' | 'edit'
-  onDone: (rule: Rule) => void
-  onDelete: (rule: Rule) => void
+  onDone: (rule: Rule) => void | Promise<boolean>
+  onDelete: (rule: Rule) => void | Promise<boolean>
   onDragEnd?: DragEventHandler<HTMLButtonElement>
   onDragOver?: DragEventHandler<HTMLDivElement>
   onDragStart?: DragEventHandler<HTMLButtonElement>
@@ -26,6 +27,7 @@ export default function RuleItem(props: Props) {
   const {
     accounts,
     draggable,
+    disabled = false,
     initialValue,
     mode,
     onDone,
@@ -63,17 +65,19 @@ export default function RuleItem(props: Props) {
     return validation.valid
   }
 
-  function handleDone() {
+  async function handleDone() {
     if (!validate()) {
       return
     }
-    setIsEditing(false)
-    onDone(rule)
+    if ((await onDone(rule)) !== false) {
+      setIsEditing(false)
+    }
   }
 
-  function handleDelete() {
-    setIsEditing(false)
-    onDelete(rule)
+  async function handleDelete() {
+    if ((await onDelete(rule)) !== false) {
+      setIsEditing(false)
+    }
   }
 
   function handleUrlPatternChange(event: React.ChangeEvent<HTMLInputElement>) {
@@ -107,7 +111,7 @@ export default function RuleItem(props: Props) {
           value={rule.urlPattern}
           onChange={handleUrlPatternChange}
           autoFocus={isEditing}
-          disabled={!isEditing}
+          disabled={disabled || !isEditing}
         />
       </Box>
       <Box sx={{ width: 150, flexShrink: 0 }}>
@@ -120,7 +124,7 @@ export default function RuleItem(props: Props) {
           helperText={accountValidation}
           value={rule.account}
           onChange={handleAccountChange}
-          disabled={!isEditing}
+          disabled={disabled || !isEditing}
         >
           <MenuItem value="" disabled>
             Select account
@@ -133,7 +137,7 @@ export default function RuleItem(props: Props) {
         </TextField>
       </Box>
       <Box sx={{ display: 'flex', flexShrink: 0 }}>
-        {draggable && !isEditing && (
+        {draggable && !disabled && !isEditing && (
           <Tooltip title="Reorder">
             <IconButton
               size="small"
@@ -148,20 +152,20 @@ export default function RuleItem(props: Props) {
         )}
         {!isEditing && (
           <Tooltip title="Edit">
-            <IconButton size="small" color="primary" onClick={handleEdit}>
+            <IconButton size="small" color="primary" disabled={disabled} onClick={handleEdit}>
               <Edit />
             </IconButton>
           </Tooltip>
         )}
         {isEditing && (
           <Tooltip title="Done">
-            <IconButton size="small" color="primary" onClick={handleDone}>
+            <IconButton size="small" color="primary" disabled={disabled} onClick={handleDone}>
               <Done />
             </IconButton>
           </Tooltip>
         )}
         <Tooltip title="Delete">
-          <IconButton size="small" color="warning" onClick={handleDelete}>
+          <IconButton size="small" color="warning" disabled={disabled} onClick={handleDelete}>
             <Close />
           </IconButton>
         </Tooltip>
