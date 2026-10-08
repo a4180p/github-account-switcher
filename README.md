@@ -57,7 +57,7 @@ This extension does not collect any personal information. All data is stored loc
 
 ### Prerequisites
 
-Node 16.15.0 or later is required.
+Node 20.19.x or Node 22.12.0 or later is required.
 
 ```bash
 pnpm install
@@ -84,6 +84,18 @@ pnpm build
 The build output is in the `dist_firefox` folder.
 
 Then load the extension in your browser, see [load temporary add-on in Firefox](https://extensionworkshop.com/documentation/develop/temporary-installation-in-firefox/)
+
+## Package Firefox for permanent installation
+
+```bash
+pnpm package:firefox
+```
+
+This creates `release/firefox-unsigned.xpi` and the matching reviewer source archive,
+`release/firefox-source.zip`. The `.xpi` is unsigned: normal Firefox requires a Mozilla-signed
+copy for permanent installation.
+
+See [Firefox release and unlisted signing](docs/firefox-release.md) for signing and install steps.
 
 ## License
 

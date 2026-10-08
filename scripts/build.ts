@@ -3,8 +3,9 @@ import { deleteAsync } from 'del'
 import fs from 'fs/promises'
 import { join } from 'path'
 import AdmZip from 'adm-zip'
+import { fileURLToPath } from 'node:url'
 
-const __dirname = new URL('.', import.meta.url).pathname
+const __dirname = fileURLToPath(new URL('.', import.meta.url))
 
 // Convert Chrome manifest V3 to Firefox manifest V2
 async function buildFirefox() {
@@ -45,6 +46,15 @@ async function buildFirefox() {
   const firefoxManifest = {
     ...rest,
     manifest_version: 2,
+    browser_specific_settings: {
+      gecko: {
+        id: 'github-account-switcher@a4180p.github.io',
+        strict_min_version: '140.0',
+        data_collection_permissions: {
+          required: ['authenticationInfo', 'websiteContent'],
+        },
+      },
+    },
     browser_action: action,
     background: {
       page: 'background.html',
@@ -84,10 +94,36 @@ async function createZip(folder: string, target: string) {
   zip.writeZip(destination)
 }
 
+function createFirefoxSourceZip() {
+  const zip = new AdmZip()
+  for (const folder of ['src', 'public', 'scripts']) {
+    zip.addLocalFolder(join(__dirname, `../${folder}`), folder)
+  }
+  for (const file of [
+    'package.json',
+    'pnpm-lock.yaml',
+    'tsconfig.json',
+    'vite.config.ts',
+    'manifest.ts',
+    'popup.html',
+    'LICENSE',
+    'README.md',
+  ]) {
+    zip.addLocalFile(join(__dirname, `../${file}`))
+  }
+  zip.addLocalFile(join(__dirname, '../docs/firefox-release.md'), 'docs')
+  zip.writeZip(join(__dirname, '../release/firefox-source.zip'))
+}
+
 async function main() {
   await buildFirefox()
   await createZip('dist', 'chrome.zip')
   await createZip('dist_firefox', 'firefox.zip')
+  await fs.copyFile(
+    join(__dirname, '../release/firefox.zip'),
+    join(__dirname, '../release/firefox-unsigned.xpi'),
+  )
+  createFirefoxSourceZip()
 }
 
 await main()
