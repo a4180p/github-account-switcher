@@ -43,7 +43,7 @@ with tempfile.TemporaryDirectory(prefix='firefox-rule-drag-') as folder:
                     time.sleep(.1)
             session = request('POST', '/session', {'capabilities': {'alwaysMatch': {
                 'browserName': 'firefox',
-                'moz:firefoxOptions': {'args': ['-headless'], 'prefs': {
+                'moz:firefoxOptions': {'args': ['-headless', '--allow-system-access'], 'prefs': {
                     'extensions.webextensions.uuids': json.dumps({addon_id: uuid}),
                     'browser.startup.homepage': 'about:blank',
                 }},
@@ -70,7 +70,12 @@ with tempfile.TemporaryDirectory(prefix='firefox-rule-drag-') as folder:
                 'path': str(Path('release/firefox-unsigned.xpi').resolve()), 'temporary': True,
             })
             assert installed == addon_id
-            request('POST', prefix + '/url', {'url': f'moz-extension://{uuid}/popup.html'})
+            request('POST', prefix + '/moz/context', {'context': 'chrome'})
+            execute('''const policy=WebExtensionPolicy.getByID('github-account-switcher@a4180p.github.io');
+              gBrowser.selectedBrowser.loadURI(policy.getURL('popup.html'), {
+                triggeringPrincipal: Services.scriptSecurityManager.getSystemPrincipal()
+              }); return true;''')
+            request('POST', prefix + '/moz/context', {'context': 'content'})
             wait('return document.querySelectorAll("[role=tab]").length > 0')
             result = asynchronous('''const done=arguments[arguments.length-1];
               window.browser.storage.local.set({accounts:{},rules:[
