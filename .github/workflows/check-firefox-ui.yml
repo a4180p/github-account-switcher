@@ -1,0 +1,32 @@
+name: Check Firefox rules UI
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  rules-ui:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@f40ffcd9367d9f12939873eb1018b921a783ffaa
+        with:
+          version: 10.25.0
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+        with:
+          node-version: 26.11.0
+          package-manager-cache: false
+      - name: Build isolated Firefox test package
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm package:firefox
+      - name: Check native rule dragging
+        run: |
+          firefox --version
+          geckodriver --version
+          python3 scripts/check-rule-drag.py
