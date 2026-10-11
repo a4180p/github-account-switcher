@@ -32,7 +32,7 @@ with tempfile.TemporaryDirectory(prefix='firefox-rule-drag-') as folder:
         driver_path = shutil.which('geckodriver')
         assert driver_path, 'Install geckodriver to run this Firefox UI check'
         driver = subprocess.Popen([driver_path, '--host', '127.0.0.1', '--port', str(port),
-                                   '--profile-root', folder], stdout=log, stderr=subprocess.STDOUT)
+                                   '--profile-root', folder, '--allow-system-access'], stdout=log, stderr=subprocess.STDOUT)
         session_id = None
         try:
             for _ in range(100):
@@ -43,7 +43,7 @@ with tempfile.TemporaryDirectory(prefix='firefox-rule-drag-') as folder:
                     time.sleep(.1)
             session = request('POST', '/session', {'capabilities': {'alwaysMatch': {
                 'browserName': 'firefox',
-                'moz:firefoxOptions': {'args': ['-headless', '--allow-system-access'], 'prefs': {
+                'moz:firefoxOptions': {'args': ['-headless'], 'prefs': {
                     'extensions.webextensions.uuids': json.dumps({addon_id: uuid}),
                     'browser.startup.homepage': 'about:blank',
                 }},
