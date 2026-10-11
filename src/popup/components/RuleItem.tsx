@@ -138,7 +138,7 @@ export default function RuleItem(props: Props) {
       </Box>
       <Box sx={{ display: 'flex', flexShrink: 0 }}>
         {draggable && !disabled && !isEditing && (
-          <Tooltip title="Reorder">
+          <Tooltip title="Reorder" disableInteractive>
             <IconButton
               size="small"
               sx={{ cursor: 'grab' }}
