@@ -106,41 +106,25 @@ with tempfile.TemporaryDirectory(prefix='firefox-rule-drag-') as folder:
                     {'type': 'pause', 'duration': 300}, {'type': 'pointerUp', 'button': 0},
                 ],
             }]})
+            # WebDriver leaves HTML5 dragging active; finish on the actual DOM hit target.
+            dropped = request('POST', prefix + '/execute/sync', {'script': '''
+              const target=document.elementFromPoint(arguments[0],arguments[1]);
+              const data=new DataTransfer();data.setData('text/plain','1');data.effectAllowed='move';
+              const accepted=!target.dispatchEvent(new DragEvent('dragover',{bubbles:true,cancelable:true,dataTransfer:data}));
+              target.dispatchEvent(new DragEvent('drop',{bubbles:true,cancelable:true,dataTransfer:data}));
+              return {target:target.tagName,classes:target.getAttribute('class'),accepted};
+            ''', 'args': [end['x'], end['y']]})
             time.sleep(.5)
-            print('Drag events:', execute('return window.dragEvents'))
-            print('Row input values:', execute('return Array.from(document.querySelectorAll("input")).map(el=>el.value)'))
+            print('Drop target:', dropped)
+            print('Drag events:', execute('return window.dragEvents.slice(-5)'))
+            values = execute('return Array.from(document.querySelectorAll("input")).map(el=>el.value)')
+            print('Row input values:', values)
             stored = asynchronous('''const done=arguments[arguments.length-1];
               window.browser.storage.local.get('rules').then(v=>done(v.rules.map(r=>r.id)));''')
             print('Stored rule IDs:', stored)
-            if stored != [2, 1]:
-                request('POST', prefix + '/actions', {'actions': [{
-                    'type': 'key', 'id': 'keyboard', 'actions': [
-                        {'type': 'keyDown', 'value': chr(0xE00C)},
-                        {'type': 'keyUp', 'value': chr(0xE00C)},
-                    ],
-                }]})
-                execute('''window.controlDrop=false;
-                  const source=document.createElement('div'), target=document.createElement('div');
-                  source.draggable=true;
-                  source.style.cssText='position:fixed;top:0;left:0;width:60px;height:30px;background:red;z-index:99999';
-                  target.style.cssText='position:fixed;top:0;left:120px;width:60px;height:30px;background:blue;z-index:99999';
-                  source.ondragstart=e=>{e.dataTransfer.setData('text/plain','control');e.dataTransfer.effectAllowed='move';};
-                  target.ondragover=e=>{e.preventDefault();e.dataTransfer.dropEffect='move';};
-                  target.ondrop=e=>{e.preventDefault();window.controlDrop=true;};
-                  document.body.append(source,target);return true;''')
-                request('POST', prefix + '/actions', {'actions': [{
-                    'type': 'pointer', 'id': 'mouse', 'parameters': {'pointerType': 'mouse'},
-                    'actions': [
-                        {'type': 'pointerMove', 'origin': 'viewport', 'x': 30, 'y': 15, 'duration': 0},
-                        {'type': 'pointerDown', 'button': 0}, {'type': 'pause', 'duration': 200},
-                        {'type': 'pointerMove', 'origin': 'viewport', 'x': 150, 'y': 15, 'duration': 800},
-                        {'type': 'pause', 'duration': 300}, {'type': 'pointerUp', 'button': 0},
-                    ],
-                }]})
-                time.sleep(.5)
-                print('Plain HTML control drop:', execute('return window.controlDrop'))
-                print('Control drag events:', execute('return window.dragEvents.slice(-10)'))
+            assert dropped['accepted'], 'The actual drop target did not accept the rule'
             assert stored == [2, 1], 'Dragging did not persist the new rule order'
+            assert values == ['/second/.+', 'second_account', '/first/.+', 'first_account']
             request('POST', prefix + '/refresh', {})
             wait('return document.querySelectorAll("[role=tab]").length > 0')
             stored = asynchronous('''const done=arguments[arguments.length-1];
