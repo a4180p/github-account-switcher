@@ -105,6 +105,22 @@ If Mozilla later signs it, download that signed XPI and use GitHub's **Draft a n
 publish it and the matching source ZIP against the existing tag. GitHub hosting does not enable
 automatic Firefox updates by itself.
 
+## Firefox rule-drag regression check
+
+The release workflow runs `python3 scripts/check-rule-drag.py` before signing. The manual
+`check-firefox-ui.yml` workflow runs the same check without signing secrets:
+
+```bash
+gh workflow run check-firefox-ui.yml --ref main
+```
+
+The check uses a temporary Firefox profile and neutral account/rule fixtures. It opens the popup
+document in a tab, uses real mouse movement and DOM hit-testing, and verifies the rendered and
+persisted order, including after reload. WebDriver does not finish HTML5 drops reliably, so the
+check dispatches the final drop event to the actual hit target. WebDriver system access is enabled
+only in this isolated browser to load the extension's own page. Your browser profile is not used.
+A signed toolbar-popup smoke test remains separate from this automated check.
+
 ## Optional command-line signing
 
 Get your JWT issuer and secret from [AMO API credentials](https://addons.mozilla.org/developers/addon/api/key/).

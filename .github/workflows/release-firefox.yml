@@ -51,6 +51,9 @@ jobs:
             pnpm exec tsx "$check"
           done
 
+      - name: Check Firefox rule dragging and persistence
+        run: python3 scripts/check-rule-drag.py
+
       - name: Validate with Mozilla tooling
         run: pnpm dlx web-ext@10.7.0 lint --source-dir dist_firefox
 

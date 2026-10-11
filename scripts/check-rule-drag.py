@@ -130,6 +130,10 @@ with tempfile.TemporaryDirectory(prefix='firefox-rule-drag-') as folder:
             stored = asynchronous('''const done=arguments[arguments.length-1];
               window.browser.storage.local.get('rules').then(v=>done(v.rules.map(r=>r.id)));''')
             assert stored == [2, 1], 'Reordered rules were not saved'
+            execute('''Array.from(document.querySelectorAll('[role=tab]'))
+              .find(el=>el.textContent.includes('Auto Switch Rules')).click(); return true;''')
+            wait('return document.querySelector("input")?.value === "/second/.+"')
+            assert execute('return Array.from(document.querySelectorAll("input")).map(el=>el.value)') == values
             print('Firefox rule drag and persistence OK')
         finally:
             if session_id:
