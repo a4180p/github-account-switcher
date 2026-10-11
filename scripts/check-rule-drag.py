@@ -115,8 +115,8 @@ with tempfile.TemporaryDirectory(prefix='firefox-rule-drag-') as folder:
             if stored != [2, 1]:
                 request('POST', prefix + '/actions', {'actions': [{
                     'type': 'key', 'id': 'keyboard', 'actions': [
-                        {'type': 'keyDown', 'value': '\\ue00c'},
-                        {'type': 'keyUp', 'value': '\\ue00c'},
+                        {'type': 'keyDown', 'value': chr(0xE00C)},
+                        {'type': 'keyUp', 'value': chr(0xE00C)},
                     ],
                 }]})
                 execute('''window.controlDrop=false;
