@@ -97,6 +97,14 @@ copy for permanent installation.
 
 See [Firefox release and unlisted signing](docs/firefox-release.md) for signing and install steps.
 
+To create and push the next patch release from a clean checkout on `main`:
+
+```bash
+pnpm release:patch
+```
+
+This creates the version commit and tag, then triggers signing and publication through GitHub Actions.
+
 ## License
 
 This project is licensed under the MIT License. See the [LICENSE](./LICENSE) file for more details.

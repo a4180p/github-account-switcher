@@ -78,12 +78,20 @@ Configure these repository Actions secrets from the Mozilla account that owns th
 To release the next patch version from a clean checkout on `main`:
 
 ```bash
-npm version patch
-git push origin main --follow-tags
+pnpm release:patch
 ```
 
-`npm version patch` creates the version commit and annotated version tag. For example, starting
-from `1.2.0` produces `v1.2.1`. Do not reuse a version already submitted to AMO.
+The script requires `main` and a clean working tree. It runs `npm version patch` to create the
+version commit and annotated version tag, then `git push origin main --follow-tags` to trigger the
+release workflow. For example, starting from `1.2.1` produces `v1.2.2`. Do not reuse a version already
+submitted to AMO.
+
+If the push fails, do not rerun the script: the version commit and tag may already exist locally.
+Retry only the push after resolving its cause:
+
+```bash
+git push origin main --follow-tags
+```
 
 The workflow checks the version, installs from the lockfile, typechecks, builds both Firefox
 archives, runs checks, and runs Mozilla validation. It then requests unlisted signing using secrets

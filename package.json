@@ -21,6 +21,7 @@
     "dev": "vite",
     "build": "vite build && tsx scripts/build.ts",
     "package:firefox": "pnpm build && tsx scripts/check-firefox-package.ts",
+    "release:patch": "node scripts/release-patch.mjs",
     "preview": "vite preview",
     "fmt": "prettier --write '**/*.{tsx,ts,json,css,scss,md}'"
   },
