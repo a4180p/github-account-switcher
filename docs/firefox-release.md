@@ -30,8 +30,9 @@ submission if the extension's data handling changes.
 
 ## Reviewer build instructions
 
-The build was checked on macOS ARM64 with Node 26.11.0 and pnpm 10.25.0. The current toolchain requires
-Node 20.19.x or Node 22.12.0 or later; use the checked versions when reproducing this release.
+Local packaging was checked on macOS ARM64 with Node 26.11.0 and pnpm 10.25.0. Automated GitHub
+releases use Ubuntu 24.04 x86-64 with the same Node and pnpm versions. Reproduce a GitHub release on
+that CI platform. The current toolchain requires Node 20.19.x or Node 22.12.0 or later.
 
 Download Node from [nodejs.org](https://nodejs.org/en/download), then install pnpm:
 
@@ -63,6 +64,46 @@ files, installed dependencies, and generated release artifacts.
 Unlisted submissions are still subject to Mozilla's policies and may need review. Local packaging
 or lint success does not guarantee signing approval. For every later submission, increase
 `package.json`'s version, keep the same add-on ID, and rebuild both archives together.
+
+## Automated GitHub Releases
+
+The workflow `.github/workflows/release-firefox.yml` runs when you push a `v*` tag. The tag must
+exactly match `v` plus the version in `package.json`; otherwise it stops before signing.
+
+Configure these repository Actions secrets from the Mozilla account that owns this add-on:
+
+- `WEB_EXT_API_KEY`: AMO JWT issuer.
+- `WEB_EXT_API_SECRET`: AMO JWT secret.
+
+To release the next patch version from a clean checkout on `main`:
+
+```bash
+npm version patch
+git push origin main --follow-tags
+```
+
+`npm version patch` creates the version commit and annotated version tag. For example, starting
+from `1.2.0` produces `v1.2.1`. Do not reuse a version already submitted to AMO.
+
+The workflow checks the version, installs from the lockfile, typechecks, builds both Firefox
+archives, runs checks, and runs Mozilla validation. It then requests unlisted signing using secrets
+scoped to that step. Only after signing succeeds does it create a GitHub Release with the downloaded
+signed XPI and `firefox-source.zip`. It never publishes `firefox-unsigned.xpi` as a release asset.
+
+The publication guard checks the XPI's version, add-on ID, and signature-file presence. Mozilla
+performs signing and Firefox verifies the cryptographic signature during installation; the guard
+is not a separate cryptographic verifier. Actions are pinned to commit revisions, and automatic
+package-manager caching is disabled in the release job. The built-in GitHub token has `contents: write` permission for release creation; no personal GitHub token is
+required, and checkout credentials are not left in Git configuration.
+
+Follow progress in [GitHub Actions](https://github.com/a4180p/github-account-switcher/actions).
+Download completed signed releases from [GitHub Releases](https://github.com/a4180p/github-account-switcher/releases).
+
+The job has a 30-minute limit. Mozilla review can exceed that time. If signing times out, inspect
+the submitted version in AMO before trying again: resubmitting the same version can be rejected.
+If Mozilla later signs it, download that signed XPI and use GitHub's **Draft a new release** page to
+publish it and the matching source ZIP against the existing tag. GitHub hosting does not enable
+automatic Firefox updates by itself.
 
 ## Optional command-line signing
 

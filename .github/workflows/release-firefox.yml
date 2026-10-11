@@ -1,0 +1,84 @@
+name: Release Firefox extension
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Check out release tag
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@f40ffcd9367d9f12939873eb1018b921a783ffaa # v4
+        with:
+          version: 10.25.0
+
+      - name: Set up Node
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 26.11.0
+          package-manager-cache: false
+
+      - name: Validate release tag
+        run: node scripts/validate-release-tag.mjs
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck
+        run: pnpm exec tsc --noEmit
+
+      - name: Package Firefox extension and reviewer source
+        run: pnpm package:firefox
+
+      - name: Run checks
+        run: |
+          for check in scripts/check-*.ts; do
+            pnpm exec tsx "$check"
+          done
+
+      - name: Validate with Mozilla tooling
+        run: pnpm dlx web-ext@10.7.0 lint --source-dir dist_firefox
+
+      - name: Sign for unlisted distribution
+        env:
+          WEB_EXT_API_KEY: ${{ secrets.WEB_EXT_API_KEY }}
+          WEB_EXT_API_SECRET: ${{ secrets.WEB_EXT_API_SECRET }}
+        run: |
+          : "${WEB_EXT_API_KEY:?Missing AMO JWT issuer}"
+          : "${WEB_EXT_API_SECRET:?Missing AMO JWT secret}"
+          pnpm dlx web-ext@10.7.0 sign \
+            --source-dir dist_firefox \
+            --channel unlisted \
+            --upload-source-code release/firefox-source.zip \
+            --artifacts-dir release/signed
+
+      - name: Verify and publish signed extension
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          shopt -s nullglob
+          signed=(release/signed/*.xpi)
+          if (( ${#signed[@]} != 1 )); then
+            echo 'Expected exactly one signed Firefox XPI' >&2
+            exit 1
+          fi
+          pnpm exec tsx scripts/validate-signed-firefox.ts "${signed[0]}"
+          gh release create "$GITHUB_REF_NAME" \
+            "${signed[0]}" release/firefox-source.zip \
+            --verify-tag --generate-notes
