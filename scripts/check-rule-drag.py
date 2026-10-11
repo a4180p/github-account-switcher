@@ -72,7 +72,7 @@ with tempfile.TemporaryDirectory(prefix='firefox-rule-drag-') as folder:
             assert installed == addon_id
             request('POST', prefix + '/moz/context', {'context': 'chrome'})
             execute('''const policy=WebExtensionPolicy.getByID('github-account-switcher@a4180p.github.io');
-              gBrowser.selectedBrowser.loadURI(policy.getURL('popup.html'), {
+              gBrowser.selectedBrowser.loadURI(Services.io.newURI(policy.getURL('popup.html')), {
                 triggeringPrincipal: Services.scriptSecurityManager.getSystemPrincipal()
               }); return true;''')
             request('POST', prefix + '/moz/context', {'context': 'content'})
