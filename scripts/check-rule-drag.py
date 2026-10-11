@@ -91,7 +91,10 @@ with tempfile.TemporaryDirectory(prefix='firefox-rule-drag-') as folder:
                 return {x:Math.round(r.x+r.width/2),y:Math.round(r.y+r.height/2)};});''')
             execute('''window.dragEvents=[];
               for(const type of ['dragstart','dragend','dragover','drop'])
-                document.addEventListener(type,e=>window.dragEvents.push({type,target:e.target.tagName}),true);
+                document.addEventListener(type,e=>queueMicrotask(()=>window.dragEvents.push({
+                  type,target:e.target.tagName,classes:e.target.getAttribute('class'),
+                  prevented:e.defaultPrevented,effect:e.dataTransfer?.dropEffect
+                })),true);
               return true;''')
             start, end = coordinates
             request('POST', prefix + '/actions', {'actions': [{
@@ -109,6 +112,34 @@ with tempfile.TemporaryDirectory(prefix='firefox-rule-drag-') as folder:
             stored = asynchronous('''const done=arguments[arguments.length-1];
               window.browser.storage.local.get('rules').then(v=>done(v.rules.map(r=>r.id)));''')
             print('Stored rule IDs:', stored)
+            if stored != [2, 1]:
+                request('POST', prefix + '/actions', {'actions': [{
+                    'type': 'key', 'id': 'keyboard', 'actions': [
+                        {'type': 'keyDown', 'value': '\\ue00c'},
+                        {'type': 'keyUp', 'value': '\\ue00c'},
+                    ],
+                }]})
+                execute('''window.controlDrop=false;
+                  const source=document.createElement('div'), target=document.createElement('div');
+                  source.draggable=true;
+                  source.style.cssText='position:fixed;top:0;left:0;width:60px;height:30px;background:red;z-index:99999';
+                  target.style.cssText='position:fixed;top:0;left:120px;width:60px;height:30px;background:blue;z-index:99999';
+                  source.ondragstart=e=>{e.dataTransfer.setData('text/plain','control');e.dataTransfer.effectAllowed='move';};
+                  target.ondragover=e=>{e.preventDefault();e.dataTransfer.dropEffect='move';};
+                  target.ondrop=e=>{e.preventDefault();window.controlDrop=true;};
+                  document.body.append(source,target);return true;''')
+                request('POST', prefix + '/actions', {'actions': [{
+                    'type': 'pointer', 'id': 'mouse', 'parameters': {'pointerType': 'mouse'},
+                    'actions': [
+                        {'type': 'pointerMove', 'origin': 'viewport', 'x': 30, 'y': 15, 'duration': 0},
+                        {'type': 'pointerDown', 'button': 0}, {'type': 'pause', 'duration': 200},
+                        {'type': 'pointerMove', 'origin': 'viewport', 'x': 150, 'y': 15, 'duration': 800},
+                        {'type': 'pause', 'duration': 300}, {'type': 'pointerUp', 'button': 0},
+                    ],
+                }]})
+                time.sleep(.5)
+                print('Plain HTML control drop:', execute('return window.controlDrop'))
+                print('Control drag events:', execute('return window.dragEvents.slice(-10)'))
             assert stored == [2, 1], 'Dragging did not persist the new rule order'
             request('POST', prefix + '/refresh', {})
             wait('return document.querySelectorAll("[role=tab]").length > 0')

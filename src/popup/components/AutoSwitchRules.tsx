@@ -54,10 +54,7 @@ export default function AutoSwitchRules() {
             onDone={ruleEditor.updateRule}
             onDelete={ruleEditor.removeRule}
             onDragEnd={ruleEditor.endDrag}
-            onDragOver={(event) => {
-              event.preventDefault()
-              event.dataTransfer.dropEffect = 'move'
-            }}
+            onDragOver={(event) => event.preventDefault()}
             onDragStart={(event) => {
               event.dataTransfer.setData('text/plain', String(rule.id))
               event.dataTransfer.effectAllowed = 'move'
